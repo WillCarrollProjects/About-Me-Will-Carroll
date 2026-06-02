@@ -2,6 +2,12 @@
 <html>
   <head>
     <title>Will Carroll</title>
+    <style>
+      /* Add space below each div (the link and button rows) */
+      div {
+        margin-bottom: 15px;
+      }
+    </style>
   </head>
   <body>
     <h1 id="main-heading" style="color: hotpink;">Will Carroll</h1>
@@ -10,15 +16,17 @@
     <p>I love to ski.</p>
     <p>I love basketball.</p>
     <h2>Find me here:</h2>
-    <a href="https://stonecoclimbing.com/">Stone Co Climbing</a>
-    <a href="https://www.rei.com/">REI</a>
+    <div><a href="https://stonecoclimbing.com/">Stone Co Climbing</a></div>
+    <div><a href="https://www.rei.com/">REI</a></div>
 
-    <button id="color-button">Change heading to navy</button>
-    <button id="fact-button">Tell me a fact!</button>
+    <div><button id="color-button">Change heading to navy</button></div>
+    <div><button id="fact-button">Tell me a fact!</button></div>
 
     <p id="fact-display"></p>
 
-    <button id="counter-button" style="font-size: 24px; padding: 20px 40px;">Clicked 0 times</button>
+    <div><button id="counter-button" style="font-size: 24px; padding: 20px 40px;">Clicked 0 times</button></div>
+
+    <p id="big-number" style="font-size: 150px; margin: 0;"></p>
 
     <script>
       // 1. Find the heading and the color button on the page:
@@ -67,10 +75,18 @@
       let count = 0;
 
       const counterButton = document.querySelector("#counter-button");
+      const bigNumber = document.querySelector("#big-number");
 
       counterButton.addEventListener("click", function () {
         count = count + 1;
         counterButton.textContent = "Clicked " + count + " times";
+
+        // Show a big 67 ONLY when the count is exactly 67; otherwise keep it empty:
+        if (count === 67) {
+          bigNumber.textContent = "67";
+        } else {
+          bigNumber.textContent = "";
+        }
       });
     </script>
   </body>
