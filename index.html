@@ -4,7 +4,7 @@
     <title>Will Carroll</title>
   </head>
   <body>
-    <h1 style="color: hotpink;">Will Carroll</h1>
+    <h1 id="main-heading" style="color: hotpink;">Will Carroll</h1>
     <img src="profile.jpg" alt="Photo of Will Carroll" style="width: 300px;">
     <p>I love to hike.</p>
     <p>I love to ski.</p>
@@ -13,9 +13,57 @@
     <a href="https://stonecoclimbing.com/">Stone Co Climbing</a>
     <a href="https://www.rei.com/">REI</a>
 
+    <button id="color-button">Change heading to navy</button>
+    <button id="fact-button">Tell me a fact!</button>
+
+    <p id="fact-display"></p>
+
+    <button id="counter-button" style="font-size: 24px; padding: 20px 40px;">Clicked 0 times</button>
+
     <script>
-      // My first JavaScript line:
-      console.log("Hi, my name is Will and this is my first console.log!");
+      // 1. Find the heading and the color button on the page:
+      const heading = document.querySelector("#main-heading");
+      const button = document.querySelector("#color-button");
+
+      // 2. When the color button is clicked, run the code inside:
+      button.addEventListener("click", function () {
+        heading.style.color = "navy";
+        console.log("Button clicked — heading is now navy!");
+      });
+
+      // --- Fun fact feature ---
+
+      // 3. An array: a numbered list holding all 5 facts.
+      const facts = [
+        "My favorite basketball player is Nikola Jokic.",
+        "I was born in Houston, Texas.",
+        "I have 2 dogs.",
+        "My favorite season is winter.",
+        "My favorite seasonal food is pumpkin pie.",
+      ];
+
+      // 4. Find the fact button and the spot where the fact will show:
+      const factButton = document.querySelector("#fact-button");
+      const factDisplay = document.querySelector("#fact-display");
+
+      // 5. When clicked, pick a random fact and show it on the page:
+      factButton.addEventListener("click", function () {
+        const randomIndex = Math.floor(Math.random() * facts.length);
+        const randomFact = facts[randomIndex];
+        factDisplay.textContent = randomFact;
+      });
+
+      // --- Click counter ---
+
+      // This variable lives OUTSIDE the click function, so it survives between clicks.
+      let count = 0;
+
+      const counterButton = document.querySelector("#counter-button");
+
+      counterButton.addEventListener("click", function () {
+        count = count + 1;
+        counterButton.textContent = "Clicked " + count + " times";
+      });
     </script>
   </body>
 </html>
