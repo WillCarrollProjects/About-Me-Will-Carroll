@@ -25,10 +25,18 @@
       const heading = document.querySelector("#main-heading");
       const button = document.querySelector("#color-button");
 
-      // 2. When the color button is clicked, run the code inside:
+      // 2. When the color button is clicked, toggle the heading color:
       button.addEventListener("click", function () {
-        heading.style.color = "navy";
-        console.log("Button clicked — heading is now navy!");
+        if (heading.style.color === "navy") {
+          // If it's currently navy, switch it back to hotpink:
+          heading.style.color = "hotpink";
+          button.textContent = "Change heading to navy";
+        } else {
+          // Otherwise (it's hotpink), make it navy:
+          heading.style.color = "navy";
+          button.textContent = "Change heading to hotpink";
+        }
+        console.log("Heading color is now: " + heading.style.color);
       });
 
       // --- Fun fact feature ---
