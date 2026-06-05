@@ -45,6 +45,10 @@
 
     <p id="big-number" style="font-size: 150px; margin: 0;"></p>
 
+    <!-- Pokémon button + the spot where the result will appear -->
+    <div><button id="pokemon-button" style="background-color: hotpink; color: white; font-weight: 600; padding: 12px 20px; font-size: 16px; border: none;">My Favorite Pokémon</button></div>
+    <div id="pokemon-result"></div>
+
     <script>
       // 1. Find the heading and the color button on the page:
       const heading = document.querySelector("#main-heading");
@@ -129,6 +133,42 @@
           bigNumber.textContent = "";
         }
       });
+
+      // --- My Favorite Pokémon (async/await + fetch) ---
+
+      // Find the Pokémon button and the spot where the result will appear:
+      const pokemonButton = document.querySelector("#pokemon-button");
+      const pokemonResult = document.querySelector("#pokemon-result");
+
+      // "async" means this function is allowed to wait for slow things (like the internet).
+      async function showFavoritePokemon() {
+        // Instant feedback so the page doesn't feel frozen while we wait:
+        pokemonResult.textContent = "Loading...";
+
+        // "try" runs the risky stuff; if anything fails, we jump to "catch".
+        try {
+          // 1. fetch + await: send the request and wait for the round trip.
+          const response = await fetch("https://pokeapi.co/api/v2/pokemon/gyarados");
+
+          // 2. await response.json(): unwrap the reply into a usable object.
+          const data = await response.json();
+
+          // 3. Dig out the one field we want — the official artwork image URL.
+          //    (Brackets are needed around "official-artwork" because of the hyphen.)
+          const imageUrl = data.sprites.other["official-artwork"].front_default;
+
+          // 4. Update the page: write the name + image into our result div.
+          pokemonResult.innerHTML =
+            "<h2 style='color: hotpink; text-transform: capitalize;'>" + data.name + "</h2>" +
+            "<img src='" + imageUrl + "' alt='" + data.name + "' width='250'>";
+        } catch (err) {
+          // If something went wrong, show it instead of failing silently:
+          pokemonResult.textContent = "Something went wrong: " + err.message;
+        }
+      }
+
+      // When the button is clicked, run the function above:
+      pokemonButton.addEventListener("click", showFavoritePokemon);
     </script>
   </body>
 </html>
