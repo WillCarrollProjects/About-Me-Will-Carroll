@@ -24,8 +24,15 @@
     </style>
   </head>
   <body>
-    <!-- Big button, fixed to the top-left corner, linking to the songs chart -->
-    <a href="charts.html" style="position: fixed; top: 20px; left: 20px; z-index: 1000; background-color: hotpink; color: white; font-size: 18px; font-weight: 600; padding: 16px 24px; border-radius: 10px; text-decoration: none; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);">🎵 Top 10 Most Played Songs</a>
+    <!-- Top-left fixed stack: songs button, then the Pokémon button under it -->
+    <div style="position: fixed; top: 20px; left: 20px; z-index: 1000; text-align: left;">
+      <!-- Big button linking to the songs chart -->
+      <div><a href="charts.html" style="display: inline-block; background-color: hotpink; color: white; font-size: 18px; font-weight: 600; padding: 16px 24px; border-radius: 10px; text-decoration: none; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);">🎵 Top 10 Most Played Songs</a></div>
+
+      <!-- Pokémon button + the spot where the result will appear -->
+      <div><button id="pokemon-button" style="background-color: hotpink; color: white; font-weight: 600; padding: 12px 20px; font-size: 16px; border: none;">My Favorite Pokémon</button></div>
+      <div id="pokemon-result"></div>
+    </div>
 
     <h1 id="main-heading" style="color: hotpink;">Will Carroll</h1>
     <img id="profile-photo" src="profile.jpg" alt="Photo of Will Carroll" style="width: 300px; height: 400px; object-fit: cover;">
@@ -44,10 +51,6 @@
     <div><button id="counter-button" style="font-size: 24px; padding: 20px 40px;">Clicked 0 times</button></div>
 
     <p id="big-number" style="font-size: 150px; margin: 0;"></p>
-
-    <!-- Pokémon button + the spot where the result will appear -->
-    <div><button id="pokemon-button" style="background-color: hotpink; color: white; font-weight: 600; padding: 12px 20px; font-size: 16px; border: none;">My Favorite Pokémon</button></div>
-    <div id="pokemon-result"></div>
 
     <script>
       // 1. Find the heading and the color button on the page:
