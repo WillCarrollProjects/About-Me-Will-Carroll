@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>My Top 10 Songs</title>
+  <!-- Load Chart.js from a CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <h1>My Top 10 Most Played Songs</h1>
+
+  <!-- The chart fills this box, so the box controls the size -->
+  <div style="max-width: 1200px; height: 800px;">
+    <!-- Chart.js will draw onto this canvas -->
+    <canvas id="myChart"></canvas>
+  </div>
+
+  <script>
+    // 1. Load the data from data.json
+    fetch("data.json")
+      .then(function (response) {
+        return response.json();
+      })
+      .then(function (songs) {
+        // 2. Pull out the labels and the play counts into two lists
+        var labels = songs.map(function (song) { return song.label; });
+        var plays  = songs.map(function (song) { return song.plays; });
+
+        // 3. Grab the canvas and draw the chart on it
+        var canvas = document.getElementById("myChart");
+        new Chart(canvas, {
+          type: "bar",
+          data: {
+            labels: labels,
+            datasets: [{
+              label: "Plays",
+              data: plays
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false
+          }
+        });
+      });
+  </script>
+</body>
+</html>
