@@ -12,6 +12,10 @@ A simple, interactive personal "About Me" web page built with HTML, CSS, and Jav
 
 This page shows my name, photo, a few things I love, and some links. It also has interactive buttons: one changes the heading color, one shows a random fun fact about me, and one counts how many times it's been clicked. I built it as my very first web project while learning the terminal, Git, GitHub, and JavaScript with the help of Claude Code. To view it locally, just open `index.html` in any web browser.
 
+## Data source
+
+The song play counts on the [charts page](charts.html) come from my personal Apple Music listening history.
+
 ## Acknowledgements
 
 I didn't follow any specific tutorials or copy code examples for this project — everything here was written from scratch as I learned.
