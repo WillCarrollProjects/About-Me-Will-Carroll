@@ -12,9 +12,12 @@ A simple, interactive personal "About Me" web page built with HTML, CSS, and Jav
 
 This page shows my name, photo, a few things I love, and some links. It also has interactive buttons: one changes the heading color, one shows a random fun fact about me, and one counts how many times it's been clicked. I built it as my very first web project while learning the terminal, Git, GitHub, and JavaScript with the help of Claude Code. To view it locally, just open `index.html` in any web browser.
 
-## Data source
+## Data sources
 
-The song play counts on the [charts page](charts.html) come from my personal Apple Music listening history.
+- **Song play counts** on the [charts page](charts.html) come from my personal Apple Music listening history.
+- **Pokémon data** for the "My Favorite Pokémon" button comes from [PokéAPI](https://pokeapi.co), a free and open API — see its [documentation](https://pokeapi.co/docs/v2). PokéAPI does not formally require attribution, but I'm happy to credit it. In keeping with its [fair use policy](https://pokeapi.co/docs/v2), this page only requests data when the button is clicked.
+
+Pokémon and Pokémon character names, data, and sprites are trademarks of Nintendo, Game Freak, Creatures Inc., and The Pokémon Company. PokéAPI and this project are not affiliated with or endorsed by them; the data is used here for non-commercial, educational purposes only.
 
 ## Acknowledgements
 
