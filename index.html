@@ -12,7 +12,7 @@
   </head>
   <body>
     <h1 id="main-heading" style="color: hotpink;">Will Carroll</h1>
-    <img src="profile.jpg" alt="Photo of Will Carroll" style="width: 300px;">
+    <img id="profile-photo" src="profile.jpg" alt="Photo of Will Carroll" style="width: 300px;">
     <p>I love to hike.</p>
     <p>I love to ski.</p>
     <p>I love basketball.</p>
@@ -62,20 +62,25 @@
       // 4. Find the fact button and the spot where the fact will show:
       const factButton = document.querySelector("#fact-button");
       const factDisplay = document.querySelector("#fact-display");
+      const profilePhoto = document.querySelector("#profile-photo");
 
       // A special rare fact with only a 1-in-20 chance of appearing:
       const rareFact = "Jack is a chud";
 
       // 5. When clicked, usually show a random normal fact —
-      //    but 1 time in 20, show the rare fact instead:
+      //    but 1 time in 20, show the rare fact AND swap the photo:
       factButton.addEventListener("click", function () {
         if (Math.random() < 1 / 20) {
-          // ~5% of the time: the rare fact
+          // ~5% of the time: the rare fact + Jack's photo
           factDisplay.textContent = rareFact;
+          profilePhoto.src = "jack.png";
+          profilePhoto.alt = "Photo of Jack";
         } else {
-          // The other ~95% of the time: a random normal fact
+          // The other ~95% of the time: a random normal fact + my normal photo
           const randomIndex = Math.floor(Math.random() * facts.length);
           factDisplay.textContent = facts[randomIndex];
+          profilePhoto.src = "profile.jpg";
+          profilePhoto.alt = "Photo of Will Carroll";
         }
       });
 
