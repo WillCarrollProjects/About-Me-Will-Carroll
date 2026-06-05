@@ -63,11 +63,20 @@
       const factButton = document.querySelector("#fact-button");
       const factDisplay = document.querySelector("#fact-display");
 
-      // 5. When clicked, pick a random fact and show it on the page:
+      // A special rare fact with only a 1-in-20 chance of appearing:
+      const rareFact = "Jack is a chud";
+
+      // 5. When clicked, usually show a random normal fact —
+      //    but 1 time in 20, show the rare fact instead:
       factButton.addEventListener("click", function () {
-        const randomIndex = Math.floor(Math.random() * facts.length);
-        const randomFact = facts[randomIndex];
-        factDisplay.textContent = randomFact;
+        if (Math.random() < 1 / 20) {
+          // ~5% of the time: the rare fact
+          factDisplay.textContent = rareFact;
+        } else {
+          // The other ~95% of the time: a random normal fact
+          const randomIndex = Math.floor(Math.random() * facts.length);
+          factDisplay.textContent = facts[randomIndex];
+        }
       });
 
       // --- Click counter ---
