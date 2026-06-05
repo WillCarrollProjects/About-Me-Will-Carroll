@@ -3,7 +3,20 @@
   <head>
     <title>Will Carroll — About Me</title>
     <meta name="description" content="The personal About Me page of Will Carroll — a hiker, skier, and basketball fan from Houston, Texas. Say hello and check out a few of my favorite places.">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
     <style>
+      /* Use a clean, modern font and center everything on the page */
+      body {
+        font-family: "Poppins", sans-serif;
+        text-align: center;
+      }
+
+      /* Round the corners of every button (and show a pointer on hover) */
+      button {
+        border-radius: 10px;
+        cursor: pointer;
+      }
+
       /* Add space below each div (the link and button rows) */
       div {
         margin-bottom: 15px;
@@ -67,6 +80,10 @@
       // A special rare fact with only a 1-in-20 chance of appearing:
       const rareFact = "Jack is a chud";
 
+      // Remember the last fact shown so we never repeat it twice in a row.
+      // It lives OUTSIDE the click function so it survives between clicks.
+      let lastIndex = -1;
+
       // 5. When clicked, usually show a random normal fact —
       //    but 1 time in 20, show the rare fact AND swap the photo:
       factButton.addEventListener("click", function () {
@@ -76,8 +93,14 @@
           profilePhoto.src = "jack.png";
           profilePhoto.alt = "Photo of Jack";
         } else {
-          // The other ~95% of the time: a random normal fact + my normal photo
-          const randomIndex = Math.floor(Math.random() * facts.length);
+          // Pick a random fact, but if it matches the last one,
+          // keep rolling until we get a different one:
+          let randomIndex = Math.floor(Math.random() * facts.length);
+          while (randomIndex === lastIndex) {
+            randomIndex = Math.floor(Math.random() * facts.length);
+          }
+          lastIndex = randomIndex; // remember it for next time
+
           factDisplay.textContent = facts[randomIndex];
           profilePhoto.src = "profile.jpg";
           profilePhoto.alt = "Photo of Will Carroll";
