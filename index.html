@@ -27,7 +27,7 @@
     <!-- Top-left fixed stack: songs button, then the Pokémon button under it -->
     <div style="position: fixed; top: 20px; left: 20px; z-index: 1000; text-align: left;">
       <!-- Big button linking to the songs chart -->
-      <div><a href="charts.html" style="display: inline-block; background-color: hotpink; color: white; font-size: 18px; font-weight: 600; padding: 16px 24px; border-radius: 10px; text-decoration: none; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);">🎵 Top 10 Most Played Songs</a></div>
+      <div><a href="charts.html" id="songs-button" style="display: inline-block; background-color: hotpink; color: white; font-size: 18px; font-weight: 600; padding: 16px 24px; border-radius: 10px; text-decoration: none; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);">🎵 Top 10 Most Played Songs</a></div>
 
       <!-- Pokémon button + the spot where the result will appear -->
       <div><button id="pokemon-button" style="background-color: hotpink; color: white; font-weight: 600; padding: 12px 20px; font-size: 16px; border: none;">My Favorite Pokémon</button></div>
@@ -43,7 +43,7 @@
     <div><a href="https://stonecoclimbing.com/">Stone Co Climbing</a></div>
     <div><a href="https://www.bryanlegends.com/">Legends Arena</a></div>
 
-    <div><button id="color-button">Change heading to navy</button></div>
+    <div><button id="color-button">Change colors to navy</button></div>
     <div><button id="fact-button">Tell me a fact!</button></div>
 
     <p id="fact-display"></p>
@@ -53,22 +53,37 @@
     <p id="big-number" style="font-size: 150px; margin: 0;"></p>
 
     <script>
+      // --- Color theme toggle (flips ALL hotpink coloring to navy and back) ---
+
+      // The current accent color used across the page. It lives OUTSIDE the
+      // click function so it persists between clicks — and so the Pokémon
+      // feature below can read it too.
+      let themeColor = "hotpink";
+
       // 1. Find the heading and the color button on the page:
       const heading = document.querySelector("#main-heading");
-      const button = document.querySelector("#color-button");
+      const colorButton = document.querySelector("#color-button");
 
-      // 2. When the color button is clicked, toggle the heading color:
-      button.addEventListener("click", function () {
-        if (heading.style.color === "navy") {
-          // If it's currently navy, switch it back to hotpink:
-          heading.style.color = "hotpink";
-          button.textContent = "Change heading to navy";
-        } else {
-          // Otherwise (it's hotpink), make it navy:
-          heading.style.color = "navy";
-          button.textContent = "Change heading to hotpink";
-        }
-        console.log("Heading color is now: " + heading.style.color);
+      // Apply the current themeColor to every accent element at once:
+      function applyThemeColor() {
+        heading.style.color = themeColor;                                             // the big name heading
+        document.querySelector("#songs-button").style.backgroundColor = themeColor;    // songs button
+        document.querySelector("#pokemon-button").style.backgroundColor = themeColor;  // Pokémon button
+        // If a Pokémon result heading is currently on screen, recolor it too:
+        const resultHeading = document.querySelector("#pokemon-result h2");
+        if (resultHeading) resultHeading.style.color = themeColor;
+      }
+
+      // 2. When clicked, flip to the other color and re-apply it everywhere:
+      colorButton.addEventListener("click", function () {
+        themeColor = themeColor === "hotpink" ? "navy" : "hotpink";
+        applyThemeColor();
+
+        // Update the label to offer the OTHER color next time:
+        colorButton.textContent =
+          themeColor === "hotpink" ? "Change colors to navy" : "Change colors to hotpink";
+
+        console.log("Theme color is now: " + themeColor);
       });
 
       // --- Fun fact feature ---
@@ -162,7 +177,7 @@
 
           // 4. Update the page: write the name + image into our result div.
           pokemonResult.innerHTML =
-            "<h2 style='color: hotpink; text-transform: capitalize;'>" + data.name + "</h2>" +
+            "<h2 style='color: " + themeColor + "; text-transform: capitalize;'>" + data.name + "</h2>" +
             "<img src='" + imageUrl + "' alt='" + data.name + "' width='250'>";
         } catch (err) {
           // If something went wrong, show it instead of failing silently:
