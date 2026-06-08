@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Pokémon — Will Carroll</title>
+    <link rel="stylesheet" href="styles.css" />
+    <style>
+      /* --- Page-specific styles for the Pokémon page --- */
+
+      /* Big logo-style title: yellow fill + blue outline, like the Pokémon logo */
+      .pokemon-title {
+        font-size: 5rem;
+        font-weight: 800;
+        color: #ffcb05;                    /* Pokémon yellow */
+        -webkit-text-stroke: 5px #2a75bb;  /* Pokémon blue outline */
+        paint-order: stroke fill;          /* outline behind fill, so the yellow shows */
+        letter-spacing: 6px;
+        text-shadow: 4px 4px 0 #1a4f8b;    /* a little depth */
+        margin: 30px 0 40px;
+      }
+
+      /* Row of three buttons */
+      .pokemon-buttons {
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        gap: 20px;
+        flex-wrap: wrap;
+      }
+      .pokemon-buttons button {
+        background-color: #2a75bb;
+        color: white;
+        font-weight: 600;
+        font-size: 1rem;
+        padding: 14px 20px;
+        border: none;
+      }
+
+      /* Search bar under the middle button */
+      #search-input {
+        margin-top: 10px;
+        padding: 10px;
+        font-size: 1rem;
+        border: 2px solid #2a75bb;
+        border-radius: 8px;
+      }
+
+      /* Where the result picture + name appear */
+      #pokemon-result {
+        margin-top: 30px;
+      }
+      .pokemon-name {
+        text-transform: capitalize;
+        color: #2a75bb;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Shared navigation — keep this IDENTICAL on every page -->
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="projects.html">Projects</a>
+      <a href="contact.html">Contact</a>
+      <a href="about.html">About</a>
+    </nav>
+
+    <main>
+      <h1 class="pokemon-title">Pokémon</h1>
+
+      <!-- The three main buttons -->
+      <div class="pokemon-buttons">
+        <!-- LEFT: random Pokémon -->
+        <div>
+          <button id="random-btn">Give me a random Pokémon</button>
+        </div>
+
+        <!-- MIDDLE: find by name, with a search bar underneath -->
+        <div>
+          <button id="find-btn">Find a Pokémon</button>
+          <div>
+            <input id="search-input" type="text" placeholder="Type a Pokémon name..." />
+          </div>
+        </div>
+
+        <!-- RIGHT: my favorite (Gyarados) -->
+        <div>
+          <button id="favorite-btn">My favorite Pokémon</button>
+        </div>
+      </div>
+
+      <!-- The picture + name appear here, shared by all three buttons -->
+      <div id="pokemon-result"></div>
+    </main>
+
+    <script>
+      // The shared area where every button shows its result:
+      const resultArea = document.querySelector("#pokemon-result");
+
+      // Show a Pokémon's picture with its name underneath.
+      function displayPokemon(data) {
+        // Prefer the official artwork; fall back to the basic sprite if it's missing.
+        const image =
+          data.sprites.other["official-artwork"].front_default ||
+          data.sprites.front_default;
+        resultArea.innerHTML =
+          "<img src='" + image + "' alt='" + data.name + "' width='250'>" +
+          "<h2 class='pokemon-name'>" + data.name + "</h2>";
+      }
+
+      // Fetch one Pokémon by name OR id, with friendly error handling.
+      async function fetchPokemon(nameOrId) {
+        resultArea.innerHTML = "<p>Loading...</p>";
+        try {
+          const response = await fetch(
+            "https://pokeapi.co/api/v2/pokemon/" + nameOrId
+          );
+          // The API returns 404 for a name it doesn't recognize — catch that:
+          if (!response.ok) throw new Error("Not found (status " + response.status + ")");
+          const data = await response.json();
+          displayPokemon(data);
+        } catch (err) {
+          resultArea.innerHTML =
+            "<p>😅 Couldn't find that Pokémon. Check the spelling and try again!</p>";
+          console.error("Pokémon fetch failed:", err);
+        }
+      }
+
+      // LEFT button: pick a random Pokémon (ids 1–1025 all exist in the API).
+      document.querySelector("#random-btn").addEventListener("click", function () {
+        const randomId = Math.floor(Math.random() * 1025) + 1;
+        fetchPokemon(randomId);
+      });
+
+      // MIDDLE button + search bar: look up whatever name was typed.
+      const searchInput = document.querySelector("#search-input");
+      function runSearch() {
+        const name = searchInput.value.trim().toLowerCase();
+        if (name === "") {
+          resultArea.innerHTML = "<p>Type a Pokémon name first!</p>";
+          return;
+        }
+        fetchPokemon(name);
+      }
+      document.querySelector("#find-btn").addEventListener("click", runSearch);
+      // Also let the user press Enter in the search box:
+      searchInput.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") runSearch();
+      });
+
+      // RIGHT button: always show Gyarados, my favorite.
+      document.querySelector("#favorite-btn").addEventListener("click", function () {
+        fetchPokemon("gyarados");
+      });
+    </script>
+  </body>
+</html>
