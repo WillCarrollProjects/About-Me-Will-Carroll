@@ -3,10 +3,20 @@
 <head>
   <meta charset="UTF-8" />
   <title>My Top 10 Songs</title>
+  <!-- Pull in the shared styles used by every page on the site -->
+  <link rel="stylesheet" href="styles.css">
   <!-- Load Chart.js from a CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 <body>
+  <!-- Shared navigation — keep this IDENTICAL on every page -->
+  <nav>
+    <a href="index.html">Home</a>
+    <a href="projects.html">Projects</a>
+    <a href="contact.html">Contact</a>
+    <a href="about.html">About</a>
+  </nav>
+
   <h1>My Top 10 Most Played Songs</h1>
 
   <!-- The chart fills this box, so the box controls the size -->

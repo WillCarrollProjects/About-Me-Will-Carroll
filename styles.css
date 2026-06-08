@@ -1,0 +1,49 @@
+/* styles.css — shared styles for EVERY page on the site.
+   Any page that wants this look just adds ONE line in its <head>:
+     <link rel="stylesheet" href="styles.css">
+   Change something here once, and every linked page updates together. */
+
+/* Load the Poppins font so every linked page can use it (no per-page setup) */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+
+/* Use a clean, modern font and center everything on the page */
+body {
+  font-family: "Poppins", sans-serif;
+  text-align: center;
+}
+
+/* Round the corners of every button (and show a pointer on hover) */
+button {
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+/* Add space below each div (the link and button rows) */
+div {
+  margin-bottom: 15px;
+}
+
+/* Navigation bar — shared across every page */
+nav {
+  margin-bottom: 30px;
+}
+nav a {
+  margin: 0 10px;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+/* Projects page: a responsive grid of cards */
+.project-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 20px;
+}
+.card {
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  padding: 20px;
+  max-width: 300px;
+  text-align: left;
+}

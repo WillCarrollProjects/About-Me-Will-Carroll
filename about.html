@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Will Carroll — About Me</title>
+    <meta name="description" content="The personal About Me page of Will Carroll — a hiker, skier, and basketball fan from Houston, Texas. Say hello and check out a few of my favorite places.">
+    <!-- Pull in the shared styles used by every page on the site -->
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <!-- Shared navigation — keep this IDENTICAL on every page -->
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="projects.html">Projects</a>
+      <a href="contact.html">Contact</a>
+      <a href="about.html">About</a>
+    </nav>
+
+    <!-- Top-left fixed stack: songs button, then the Pokémon button under it -->
+    <div style="position: fixed; top: 20px; left: 20px; z-index: 1000; text-align: left;">
+      <!-- Big button linking to the songs chart -->
+      <div><a href="charts.html" id="songs-button" style="display: inline-block; background-color: hotpink; color: white; font-size: 18px; font-weight: 600; padding: 16px 24px; border-radius: 10px; text-decoration: none; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);">🎵 Top 10 Most Played Songs</a></div>
+
+      <!-- Pokémon button + the spot where the result will appear -->
+      <div><button id="pokemon-button" style="background-color: hotpink; color: white; font-weight: 600; padding: 12px 20px; font-size: 16px; border: none;">My Favorite Pokémon</button></div>
+      <div id="pokemon-result"></div>
+    </div>
+
+    <h1 id="main-heading" style="color: hotpink;">Will Carroll</h1>
+    <img id="profile-photo" src="profile.jpg" alt="Photo of Will Carroll" style="width: 300px; height: 400px; object-fit: cover;">
+    <p>I love to hike.</p>
+    <p>I love to ski.</p>
+    <p>I love basketball.</p>
+    <h2>Find me here:</h2>
+    <div><a href="https://stonecoclimbing.com/">Stone Co Climbing</a></div>
+    <div><a href="https://www.bryanlegends.com/">Legends Arena</a></div>
+
+    <div><button id="color-button">Change colors to navy</button></div>
+    <div><button id="fact-button">Tell me a fact!</button></div>
+
+    <p id="fact-display"></p>
+
+    <div><button id="counter-button" style="font-size: 24px; padding: 20px 40px;">Clicked 0 times</button></div>
+
+    <p id="big-number" style="font-size: 150px; margin: 0;"></p>
+
+    <script>
+      // --- Color theme toggle (flips ALL hotpink coloring to navy and back) ---
+
+      // The current accent color used across the page. It lives OUTSIDE the
+      // click function so it persists between clicks — and so the Pokémon
+      // feature below can read it too.
+      let themeColor = "hotpink";
+
+      // 1. Find the heading and the color button on the page:
+      const heading = document.querySelector("#main-heading");
+      const colorButton = document.querySelector("#color-button");
+
+      // Apply the current themeColor to every accent element at once:
+      function applyThemeColor() {
+        heading.style.color = themeColor;                                             // the big name heading
+        document.querySelector("#songs-button").style.backgroundColor = themeColor;    // songs button
+        document.querySelector("#pokemon-button").style.backgroundColor = themeColor;  // Pokémon button
+        // If a Pokémon result heading is currently on screen, recolor it too:
+        const resultHeading = document.querySelector("#pokemon-result h2");
+        if (resultHeading) resultHeading.style.color = themeColor;
+      }
+
+      // 2. When clicked, flip to the other color and re-apply it everywhere:
+      colorButton.addEventListener("click", function () {
+        themeColor = themeColor === "hotpink" ? "navy" : "hotpink";
+        applyThemeColor();
+
+        // Update the label to offer the OTHER color next time:
+        colorButton.textContent =
+          themeColor === "hotpink" ? "Change colors to navy" : "Change colors to hotpink";
+
+        console.log("Theme color is now: " + themeColor);
+      });
+
+      // --- Fun fact feature ---
+
+      // 3. An array: a numbered list holding all 5 facts.
+      const facts = [
+        "My favorite basketball player is Nikola Jokic.",
+        "I was born in Houston, Texas.",
+        "I have 2 dogs.",
+        "My favorite season is winter.",
+        "My favorite seasonal food is pumpkin pie.",
+      ];
+
+      // 4. Find the fact button and the spot where the fact will show:
+      const factButton = document.querySelector("#fact-button");
+      const factDisplay = document.querySelector("#fact-display");
+      const profilePhoto = document.querySelector("#profile-photo");
+
+      // A special rare fact with only a 1-in-20 chance of appearing:
+      const rareFact = "Jack is a chud";
+
+      // Remember the last fact shown so we never repeat it twice in a row.
+      // It lives OUTSIDE the click function so it survives between clicks.
+      let lastIndex = -1;
+
+      // 5. When clicked, usually show a random normal fact —
+      //    but 1 time in 20, show the rare fact AND swap the photo:
+      factButton.addEventListener("click", function () {
+        if (Math.random() < 1 / 20) {
+          // ~5% of the time: the rare fact + Jack's photo
+          factDisplay.textContent = rareFact;
+          profilePhoto.src = "jack.png";
+          profilePhoto.alt = "Photo of Jack";
+        } else {
+          // Pick a random fact, but if it matches the last one,
+          // keep rolling until we get a different one:
+          let randomIndex = Math.floor(Math.random() * facts.length);
+          while (randomIndex === lastIndex) {
+            randomIndex = Math.floor(Math.random() * facts.length);
+          }
+          lastIndex = randomIndex; // remember it for next time
+
+          factDisplay.textContent = facts[randomIndex];
+          profilePhoto.src = "profile.jpg";
+          profilePhoto.alt = "Photo of Will Carroll";
+        }
+      });
+
+      // --- Click counter ---
+
+      // This variable lives OUTSIDE the click function, so it survives between clicks.
+      let count = 0;
+
+      const counterButton = document.querySelector("#counter-button");
+      const bigNumber = document.querySelector("#big-number");
+
+      counterButton.addEventListener("click", function () {
+        count = count + 1;
+        counterButton.textContent = "Clicked " + count + " times";
+
+        // Show a big 67 ONLY when the count is exactly 67; otherwise keep it empty:
+        if (count === 67) {
+          bigNumber.textContent = "67";
+        } else {
+          bigNumber.textContent = "";
+        }
+      });
+
+      // --- My Favorite Pokémon (async/await + fetch) ---
+
+      // Find the Pokémon button and the spot where the result will appear:
+      const pokemonButton = document.querySelector("#pokemon-button");
+      const pokemonResult = document.querySelector("#pokemon-result");
+
+      // "async" means this function is allowed to wait for slow things (like the internet).
+      async function showFavoritePokemon() {
+        // Instant feedback so the page doesn't feel frozen while we wait:
+        pokemonResult.textContent = "Loading...";
+
+        // "try" runs the risky stuff; if anything fails, we jump to "catch".
+        try {
+          // 1. fetch + await: send the request and wait for the round trip.
+          const response = await fetch("https://pokeapi.co/api/v2/pokemon/gyarados");
+
+          // 1b. fetch only throws on a network failure — a 404 or 500 still
+          //     "succeeds" here. So we check response.ok ourselves and throw
+          //     if it's not OK, which sends us down to the catch block.
+          if (!response.ok) {
+            throw new Error("Server responded with status " + response.status);
+          }
+
+          // 2. await response.json(): unwrap the reply into a usable object.
+          const data = await response.json();
+
+          // 3. Dig out the one field we want — the official artwork image URL.
+          //    (Brackets are needed around "official-artwork" because of the hyphen.)
+          const imageUrl = data.sprites.other["official-artwork"].front_default;
+
+          // 4. Update the page: write the name + image into our result div.
+          pokemonResult.innerHTML =
+            "<h2 style='color: " + themeColor + "; text-transform: capitalize;'>" + data.name + "</h2>" +
+            "<img src='" + imageUrl + "' alt='" + data.name + "' width='250'>";
+        } catch (err) {
+          // We only reach here if something in `try` above threw an error.
+          // Job 1: show the VISITOR a calm, friendly message (not a scary one):
+          pokemonResult.textContent =
+            "😅 Sorry, I couldn't load my favorite Pokémon right now. Please try again in a moment.";
+          // Job 2: log the technical details to the console for YOU, the developer:
+          console.error("Pokémon fetch failed:", err);
+        }
+      }
+
+      // When the button is clicked, run the function above:
+      pokemonButton.addEventListener("click", showFavoritePokemon);
+    </script>
+  </body>
+</html>
