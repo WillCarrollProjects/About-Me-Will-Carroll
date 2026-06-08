@@ -63,3 +63,56 @@ nav a {
 .about p {
   line-height: 1.6;    /* a little breathing room between lines */
 }
+
+/* Home page: the row of navigation buttons, below the content */
+.home-nav {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-top: 60px;
+}
+.home-nav a {
+  font-size: 1.5rem;        /* slightly smaller than before */
+  font-weight: 700;
+  padding: 12px 28px;
+  background-color: white;
+  color: black;
+  border: 2px solid black;  /* a border so a white button shows on a white page */
+  border-radius: 12px;
+  text-decoration: none;
+}
+
+/* White button style matching the home page buttons (used on the About page) */
+.white-btn {
+  font-size: 1.1rem;
+  font-weight: 700;
+  padding: 10px 22px;
+  background-color: white;
+  color: black;
+  border: 2px solid black;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+/* Make the fun fact stand out in bold when it appears */
+#fact-display {
+  font-weight: bold;
+}
+
+/* Red circular button for the click counter */
+.red-circle {
+  width: 130px;
+  height: 130px;
+  border-radius: 50%;
+  background-color: red;
+  color: white;
+  border: none;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}

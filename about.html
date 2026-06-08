@@ -19,13 +19,20 @@
     <!-- Top-left fixed stack: songs button, then the Pokémon button under it -->
     <div style="position: fixed; top: 20px; left: 20px; z-index: 1000; text-align: left;">
       <!-- Big button linking to the songs chart -->
-      <div><a href="charts.html" id="songs-button" style="display: inline-block; background-color: hotpink; color: white; font-size: 18px; font-weight: 600; padding: 16px 24px; border-radius: 10px; text-decoration: none; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);">🎵 Top 10 Most Played Songs</a></div>
+      <div><a href="charts.html" id="songs-button" style="display: inline-block; background-color: navy; color: white; font-size: 18px; font-weight: 600; padding: 16px 24px; border-radius: 10px; text-decoration: none; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);">🎵 Top 10 Most Played Songs</a></div>
 
       <!-- Pokémon button — now links to the dedicated Pokémon page -->
-      <div><a href="pokemon.html" id="pokemon-button" style="display: inline-block; background-color: hotpink; color: white; font-weight: 600; padding: 12px 20px; font-size: 16px; border: none; border-radius: 10px; text-decoration: none;">Pokémon</a></div>
+      <div><a href="pokemon.html" id="pokemon-button" style="display: inline-block; background-color: navy; color: white; font-weight: 600; padding: 12px 20px; font-size: 16px; border: none; border-radius: 10px; text-decoration: none;">Pokémon</a></div>
     </div>
 
-    <h1 id="main-heading" style="color: hotpink;">Will Carroll</h1>
+    <!-- Top-right fixed stack: color + fact buttons, then the click counter below -->
+    <div style="position: fixed; top: 20px; right: 20px; z-index: 1000; display: flex; flex-direction: column; align-items: flex-end; gap: 15px;">
+      <button id="color-button" class="white-btn">Change colors to hotpink</button>
+      <button id="fact-button" class="white-btn">Tell me a fact!</button>
+      <button id="counter-button" class="red-circle">Clicked 0 times</button>
+    </div>
+
+    <h1 id="main-heading" style="color: navy;">Will Carroll</h1>
     <img id="profile-photo" src="profile.jpg" alt="Photo of Will Carroll" style="width: 300px; height: 400px; object-fit: cover;">
     <p>I love to hike.</p>
     <p>I love to ski.</p>
@@ -34,12 +41,7 @@
     <div><a href="https://stonecoclimbing.com/">Stone Co Climbing</a></div>
     <div><a href="https://www.bryanlegends.com/">Legends Arena</a></div>
 
-    <div><button id="color-button">Change colors to navy</button></div>
-    <div><button id="fact-button">Tell me a fact!</button></div>
-
     <p id="fact-display"></p>
-
-    <div><button id="counter-button" style="font-size: 24px; padding: 20px 40px;">Clicked 0 times</button></div>
 
     <p id="big-number" style="font-size: 150px; margin: 0;"></p>
 
@@ -49,7 +51,7 @@
       // The current accent color used across the page. It lives OUTSIDE the
       // click function so it persists between clicks — and so the Pokémon
       // feature below can read it too.
-      let themeColor = "hotpink";
+      let themeColor = "navy";
 
       // 1. Find the heading and the color button on the page:
       const heading = document.querySelector("#main-heading");
