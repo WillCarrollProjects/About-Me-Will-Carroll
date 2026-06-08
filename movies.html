@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Movies — Will Carroll</title>
+    <link rel="stylesheet" href="styles.css" />
+    <!-- Chart.js draws the chart; PapaParse reads the CSV file -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  </head>
+  <body>
+    <!-- Shared navigation — keep this IDENTICAL on every page -->
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="projects.html">Projects</a>
+      <a href="contact.html">Contact</a>
+      <a href="about.html">About</a>
+    </nav>
+
+    <main>
+      <h1>How I Rate Movies</h1>
+      <p>The star ratings I've given every film on my Letterboxd.</p>
+
+      <!-- The chart fills this box, so the box controls the size -->
+      <div style="max-width: 1000px; height: 500px; margin: 0 auto;">
+        <canvas id="ratingsChart"></canvas>
+      </div>
+
+      <p id="movies-status"></p>
+    </main>
+
+    <script>
+      // Turn a rating number into stars, e.g. 3.5 -> "★★★½", 0.5 -> "½"
+      function ratingLabel(r) {
+        const full = Math.floor(r);
+        const half = r % 1 !== 0;
+        return "★".repeat(full) + (half ? "½" : "");
+      }
+
+      // Every possible Letterboxd rating, half a star at a time.
+      const RATING_VALUES = [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5];
+
+      const status = document.querySelector("#movies-status");
+
+      // 1. Load the ratings CSV exported from Letterboxd (every film I've rated).
+      fetch("ratings.csv")
+        .then(function (response) {
+          if (!response.ok) throw new Error("Couldn't load ratings.csv (status " + response.status + ")");
+          return response.text();
+        })
+        .then(function (csvText) {
+          // 2. Parse the CSV into rows. header:true uses the first line as column names.
+          const parsed = Papa.parse(csvText, { header: true, skipEmptyLines: true });
+          const rows = parsed.data;
+
+          // 3. Count how many films got each star rating.
+          const counts = {};
+          rows.forEach(function (row) {
+            const ratingStr = row["Rating"];
+            if (!ratingStr) return;
+            const rating = Number(ratingStr);
+            if (isNaN(rating)) return;
+            counts[rating] = (counts[rating] || 0) + 1;
+          });
+
+          // 4. Build the bars: one per rating value, from ½ to ★★★★★.
+          const labels = RATING_VALUES.map(ratingLabel);
+          const data = RATING_VALUES.map(function (v) { return counts[v] || 0; });
+
+          // 5. Draw the bar chart.
+          new Chart(document.querySelector("#ratingsChart"), {
+            type: "bar",
+            data: {
+              labels: labels,
+              datasets: [{
+                label: "Number of films",
+                data: data,
+                backgroundColor: "#00b020" // Letterboxd green
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              scales: { y: { beginAtZero: true, max: 35, ticks: { precision: 0 } } }
+            }
+          });
+
+          const total = data.reduce(function (a, b) { return a + b; }, 0);
+          status.textContent = "Based on " + total + " rated films.";
+        })
+        .catch(function (err) {
+          status.textContent = "😅 Couldn't load the movie data. Make sure ratings.csv is in place.";
+          console.error("Movies dashboard error:", err);
+        });
+    </script>
+  </body>
+</html>
