@@ -100,19 +100,28 @@ nav a {
   font-weight: bold;
 }
 
-/* Red circular button for the click counter */
+/* Red circular button for the click counter — with a glossy 3D look */
 .red-circle {
   width: 130px;
   height: 130px;
   border-radius: 50%;
-  background-color: red;
+  /* Radial gradient gives a shiny, rounded "ball" highlight in the top-left */
+  background: radial-gradient(circle at 35% 30%, #ff7b7b, #cc0000 70%);
   color: white;
   border: none;
-  font-size: 1rem;
+  font-size: 2.5rem;        /* big, since it now shows just the number */
   font-weight: 700;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   text-align: center;
+  /* The solid offset shadow makes it look raised; the soft one is a drop shadow */
+  box-shadow: 0 8px 0 #8b0000, 0 12px 15px rgba(0, 0, 0, 0.4);
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+/* When pressed, it sinks down and the shadow shrinks — a tactile 3D click */
+.red-circle:active {
+  transform: translateY(6px);
+  box-shadow: 0 2px 0 #8b0000, 0 4px 8px rgba(0, 0, 0, 0.4);
 }
