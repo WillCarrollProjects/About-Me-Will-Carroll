@@ -47,3 +47,19 @@ nav a {
   max-width: 300px;
   text-align: left;
 }
+
+/* Home page: one-sentence intro under the name */
+.intro {
+  font-size: 1.25rem;
+  color: #555;
+}
+
+/* Home page: About Me section — a readable, centered column */
+.about {
+  max-width: 600px;
+  margin: 30px auto;   /* auto left/right margins center the column */
+  text-align: left;    /* left-aligned text is easier to read in paragraphs */
+}
+.about p {
+  line-height: 1.6;    /* a little breathing room between lines */
+}
