@@ -59,6 +59,8 @@
       .leaderboard h3 { margin-bottom: 4px; }
       .leaderboard ol { text-align: left; max-width: 280px; margin: 8px auto; }
       .leaderboard li { padding: 3px 0; }
+      .exit-btn { background: none; color: #99aabb; border: 1px solid #456; padding: 6px 14px; font-size: 0.85rem; border-radius: 4px; }
+      .exit-btn:hover { color: #00e054; border-color: #00e054; }
     </style>
   </head>
   <body>
@@ -79,6 +81,8 @@
         <button id="mode-gmr" class="menu-btn">Guess My Rating</button>
         <button id="mode-hl" class="menu-btn">Higher or Lower</button>
         <p id="loading-msg"></p>
+        <div id="menu-gmr-board" class="leaderboard"></div>
+        <div id="menu-hl-board" class="leaderboard"></div>
       </div>
 
       <!-- Guess My Rating -->
@@ -89,6 +93,7 @@
         <div id="gmr-buttons"></div>
         <p id="gmr-reveal"></p>
         <button id="gmr-next" class="menu-btn" style="display: none;">Next</button>
+        <p><button id="gmr-exit" class="exit-btn">✕ Exit to menu</button></p>
       </div>
       <div id="gmr-end" class="game-card" style="display: none;">
         <h2>Final score</h2>
@@ -131,6 +136,7 @@
           <button id="hl-again" class="menu-btn">Play again</button>
           <button class="menu-btn to-menu">Back to menu</button>
         </div>
+        <p><button id="hl-exit" class="exit-btn">✕ Exit to menu</button></p>
       </div>
     </main>
 
@@ -234,7 +240,7 @@
           document.querySelector("#gmr-final").textContent = gmrScore + " / " + (ROUNDS * 100);
           resetSaveUI("#gmr-name", "#gmr-save", "#gmr-save-msg");
           showScreen("gmr-end");
-          loadLeaderboard("gmr", document.querySelector("#gmr-board"));
+          loadLeaderboard("gmr", document.querySelector("#gmr-board"), "Guess My Rating");
         }
       });
 
@@ -290,7 +296,7 @@
           hlReveal.textContent = "❌ Game over! Streak: " + hlStreak + " · Best: " + hlBest;
           resetSaveUI("#hl-name", "#hl-save", "#hl-save-msg");
           hlGameover.style.display = "block";
-          loadLeaderboard("hl", document.querySelector("#hl-board"));
+          loadLeaderboard("hl", document.querySelector("#hl-board"), "Higher or Lower");
         }
       }
       hlAbtn.addEventListener("click", function () { hlPick(hlA, hlB); });
@@ -311,27 +317,50 @@
         document.querySelector(saveId).disabled = false;
         document.querySelector(msgId).textContent = "";
       }
-      // POST a score to the leaderboard.
-      function submitScore(name, game, score) {
-        return fetch(SB_URL, {
-          method: "POST",
-          headers: Object.assign({ Prefer: "return=minimal" }, SB_HEADERS),
-          body: JSON.stringify({ name: name, game: game, score: score })
-        }).then(function (r) { if (!r.ok) throw new Error("save " + r.status); });
+      // Save a score, keeping only the HIGHEST per name + game.
+      async function submitScore(name, game, score) {
+        // Is there already a row for this name + game?
+        const existing = await fetch(
+          SB_URL + "?game=eq." + game + "&name=eq." + encodeURIComponent(name) + "&select=id,score",
+          { headers: SB_HEADERS }
+        ).then(function (r) { if (!r.ok) throw new Error("lookup " + r.status); return r.json(); });
+
+        if (existing.length === 0) {
+          // First time this name plays this game → insert a new row.
+          const r = await fetch(SB_URL, {
+            method: "POST",
+            headers: Object.assign({ Prefer: "return=minimal" }, SB_HEADERS),
+            body: JSON.stringify({ name: name, game: game, score: score })
+          });
+          if (!r.ok) throw new Error("insert " + r.status);
+          return "new";
+        }
+        if (score > existing[0].score) {
+          // Beat their old best → update that one row.
+          const r = await fetch(SB_URL + "?id=eq." + existing[0].id, {
+            method: "PATCH",
+            headers: Object.assign({ Prefer: "return=minimal" }, SB_HEADERS),
+            body: JSON.stringify({ score: score })
+          });
+          if (!r.ok) throw new Error("update " + r.status);
+          return "improved";
+        }
+        return "kept"; // existing score is higher — leave it alone
       }
       // GET the top 10 scores for a game and render them.
-      function loadLeaderboard(game, boardEl) {
-        boardEl.innerHTML = "<p>Loading leaderboard…</p>";
+      function loadLeaderboard(game, boardEl, title) {
+        title = title || "Leaderboard";
+        boardEl.innerHTML = "<p>Loading " + title + "…</p>";
         return fetch(SB_URL + "?game=eq." + game + "&select=name,score&order=score.desc&limit=10", { headers: SB_HEADERS })
           .then(function (r) { if (!r.ok) throw new Error("load " + r.status); return r.json(); })
           .then(function (rows) {
-            if (!rows.length) { boardEl.innerHTML = "<h3>🏆 Leaderboard</h3><p>No scores yet — be the first!</p>"; return; }
-            let html = "<h3>🏆 Leaderboard</h3><ol>";
+            if (!rows.length) { boardEl.innerHTML = "<h3>🏆 " + title + "</h3><p>No scores yet — be the first!</p>"; return; }
+            let html = "<h3>🏆 " + title + "</h3><ol>";
             rows.forEach(function (row) { html += "<li>" + escapeHtml(row.name) + " — " + row.score + "</li>"; });
             html += "</ol>";
             boardEl.innerHTML = html;
           })
-          .catch(function (err) { boardEl.innerHTML = "<p>😅 Couldn't load the leaderboard.</p>"; console.error(err); });
+          .catch(function (err) { boardEl.innerHTML = "<p>😅 Couldn't load " + title + ".</p>"; console.error(err); });
       }
       // Wire a "save" button: validate name, submit the score, reload the board.
       function setupSave(saveId, nameId, msgId, boardId, game, getScore) {
@@ -343,22 +372,38 @@
           if (name === "") { msgEl.style.color = "#c0392b"; msgEl.textContent = "Enter a name first!"; return; }
           btn.disabled = true; nameEl.disabled = true;
           msgEl.style.color = "#2e7d32"; msgEl.textContent = "Saving…";
+          const title = game === "gmr" ? "Guess My Rating" : "Higher or Lower";
           submitScore(name, game, getScore())
-            .then(function () { msgEl.textContent = "Saved! 🎉"; return loadLeaderboard(game, document.querySelector(boardId)); })
+            .then(function (status) {
+              msgEl.textContent = status === "kept" ? "Saved — your best score still stands!" : "Saved! 🎉";
+              return loadLeaderboard(game, document.querySelector(boardId), title);
+            })
             .catch(function (err) { msgEl.style.color = "#c0392b"; msgEl.textContent = "Couldn't save — try again."; btn.disabled = false; nameEl.disabled = false; console.error(err); });
         });
       }
       setupSave("#gmr-save", "#gmr-name", "#gmr-save-msg", "#gmr-board", "gmr", function () { return gmrScore; });
       setupSave("#hl-save", "#hl-name", "#hl-save-msg", "#hl-board", "hl", function () { return hlStreak; });
 
+      // Show the menu and (re)load both leaderboards there.
+      function showMenu() {
+        showScreen("mode-screen");
+        loadLeaderboard("gmr", document.querySelector("#menu-gmr-board"), "Guess My Rating");
+        loadLeaderboard("hl", document.querySelector("#menu-hl-board"), "Higher or Lower");
+      }
+
       /* ===== Wiring ===== */
       document.querySelector("#mode-gmr").addEventListener("click", function () { ensureLoaded(startGMR); });
       document.querySelector("#mode-hl").addEventListener("click", function () { ensureLoaded(startHL); });
       document.querySelector("#gmr-again").addEventListener("click", startGMR);
       document.querySelector("#hl-again").addEventListener("click", startHL);
+      document.querySelector("#gmr-exit").addEventListener("click", showMenu);
+      document.querySelector("#hl-exit").addEventListener("click", showMenu);
       document.querySelectorAll(".to-menu").forEach(function (b) {
-        b.addEventListener("click", function () { showScreen("mode-screen"); });
+        b.addEventListener("click", showMenu);
       });
+
+      // Load the leaderboards on the menu right away.
+      showMenu();
     </script>
   </body>
 </html>
