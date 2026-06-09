@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Movies — Will Carroll</title>
     <link rel="stylesheet" href="styles.css" />
-    <!-- Chart.js draws the chart; PapaParse reads the CSV file -->
+    <!-- Chart.js draws the charts; PapaParse reads the CSV file -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   </head>
@@ -20,14 +20,29 @@
 
     <main>
       <h1>How I Rate Movies</h1>
-      <p>The star ratings I've given every film on my Letterboxd.</p>
 
-      <!-- The chart fills this box, so the box controls the size -->
+      <!-- Intro line with the decade dropdown pinned to the left -->
+      <div style="position: relative; max-width: 1000px; margin: 0 auto;">
+        <select id="decade-select" style="position: absolute; right: -40px; top: 0; padding: 8px 12px; font-size: 1rem; border-radius: 8px; border: 2px solid #00b020; cursor: pointer;">
+          <option value="all">All Time</option>
+        </select>
+        <p>The star ratings I've given every film on my Letterboxd. <strong>Click a bar</strong> to see which films got that rating.</p>
+      </div>
+
+      <!-- The bar chart fills this box, so the box controls the size -->
       <div style="max-width: 1000px; height: 500px; margin: 0 auto;">
         <canvas id="ratingsChart"></canvas>
       </div>
 
       <p id="movies-status"></p>
+
+      <!-- Two columns under the chart: clicked-bar film list on the LEFT, pie chart on the RIGHT -->
+      <div style="display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-start; gap: 40px; max-width: 1000px; margin: 30px auto;">
+        <div id="movie-list" style="flex: 1; min-width: 280px; text-align: left;"></div>
+        <div style="flex: 1; min-width: 280px; height: 360px;">
+          <canvas id="ratingsPie"></canvas>
+        </div>
+      </div>
     </main>
 
     <script>
@@ -38,10 +53,82 @@
         return "★".repeat(full) + (half ? "½" : "");
       }
 
+      // Make text safe to drop into HTML (in case a title has < & > characters).
+      function escapeHtml(s) {
+        return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      }
+
+      // Which decade a year belongs to: 1994 -> 1990.
+      function decadeOf(year) {
+        return Math.floor(year / 10) * 10;
+      }
+
       // Every possible Letterboxd rating, half a star at a time.
       const RATING_VALUES = [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5];
+      // A diverging color scale: 1★ darkest red → yellow in the middle → 5★ darkest green.
+      const RATING_COLORS = ["#b71c1c","#b71c1c","#e53935","#fb8c00","#fdd835","#cddc39","#9ccc65","#66bb6a","#388e3c","#1b5e20"];
 
       const status = document.querySelector("#movies-status");
+      const movieList = document.querySelector("#movie-list");
+      const decadeSelect = document.querySelector("#decade-select");
+
+      let allFilms = [];          // every film: { title, year, rating }
+      let currentMovies = {};     // rating -> [titles] for the CURRENT decade filter
+      let barChart, pieChart;
+
+      // Show the films for one rating in the list area (left column).
+      function showMovies(rating) {
+        const films = (currentMovies[rating] || []).slice().sort();
+        if (films.length === 0) {
+          movieList.innerHTML = "<p>No films rated " + ratingLabel(rating) + ".</p>";
+          return;
+        }
+        let html = "<h2>" + ratingLabel(rating) + " — " + films.length +
+          " film" + (films.length === 1 ? "" : "s") + "</h2><ul>";
+        films.forEach(function (f) { html += "<li>" + escapeHtml(f) + "</li>"; });
+        html += "</ul>";
+        movieList.innerHTML = html;
+      }
+
+      // Recompute the charts for a given decade ("all" or a number like 1990).
+      function render(decade) {
+        const films = (decade === "all")
+          ? allFilms
+          : allFilms.filter(function (f) { return decadeOf(f.year) === decade; });
+
+        // Count films per rating AND remember titles per rating (for the click list).
+        const counts = {};
+        currentMovies = {};
+        films.forEach(function (f) {
+          counts[f.rating] = (counts[f.rating] || 0) + 1;
+          if (!currentMovies[f.rating]) currentMovies[f.rating] = [];
+          currentMovies[f.rating].push(f.title);
+        });
+
+        // Update the BAR chart, with ~20% headroom above the tallest bar.
+        const barData = RATING_VALUES.map(function (v) { return counts[v] || 0; });
+        barChart.data.datasets[0].data = barData;
+        const peak = Math.max.apply(null, barData);
+        barChart.options.scales.y.suggestedMax = Math.ceil((peak || 1) * 1.2);
+        barChart.update();
+
+        // Update the PIE chart (skip ratings with zero films so it stays clean).
+        const pieLabels = [], pieData = [], pieColors = [];
+        RATING_VALUES.forEach(function (v, i) {
+          const c = counts[v] || 0;
+          if (c > 0) { pieLabels.push(ratingLabel(v)); pieData.push(c); pieColors.push(RATING_COLORS[i]); }
+        });
+        pieChart.data.labels = pieLabels;
+        pieChart.data.datasets[0].data = pieData;
+        pieChart.data.datasets[0].backgroundColor = pieColors;
+        pieChart.update();
+
+        // The old film list is stale for the new decade — clear it.
+        movieList.innerHTML = "";
+
+        const label = decade === "all" ? "all time" : decade + "s";
+        status.textContent = "Based on " + films.length + " rated films (" + label + ").";
+      }
 
       // 1. Load the ratings CSV exported from Letterboxd (every film I've rated).
       fetch("ratings.csv")
@@ -50,44 +137,67 @@
           return response.text();
         })
         .then(function (csvText) {
-          // 2. Parse the CSV into rows. header:true uses the first line as column names.
-          const parsed = Papa.parse(csvText, { header: true, skipEmptyLines: true });
-          const rows = parsed.data;
-
-          // 3. Count how many films got each star rating.
-          const counts = {};
+          // 2. Parse the CSV into rows, then into our allFilms list.
+          const rows = Papa.parse(csvText, { header: true, skipEmptyLines: true }).data;
           rows.forEach(function (row) {
-            const ratingStr = row["Rating"];
-            if (!ratingStr) return;
-            const rating = Number(ratingStr);
-            if (isNaN(rating)) return;
-            counts[rating] = (counts[rating] || 0) + 1;
+            const rating = Number(row["Rating"]);
+            const year = Number(row["Year"]);
+            if (!row["Rating"] || isNaN(rating)) return;
+            allFilms.push({
+              title: row["Name"] + (row["Year"] ? " (" + row["Year"] + ")" : ""),
+              year: year,
+              rating: rating
+            });
           });
 
-          // 4. Build the bars: one per rating value, from ½ to ★★★★★.
-          const labels = RATING_VALUES.map(ratingLabel);
-          const data = RATING_VALUES.map(function (v) { return counts[v] || 0; });
+          // 3. Fill the dropdown with the decades that actually appear in the data.
+          const decades = [];
+          allFilms.forEach(function (f) {
+            if (!isNaN(f.year)) {
+              const dec = decadeOf(f.year);
+              if (decades.indexOf(dec) === -1) decades.push(dec);
+            }
+          });
+          decades.sort(function (a, b) { return a - b; });
+          decades.forEach(function (dec) {
+            const opt = document.createElement("option");
+            opt.value = String(dec);
+            opt.textContent = dec + "s";
+            decadeSelect.appendChild(opt);
+          });
 
-          // 5. Draw the bar chart.
-          new Chart(document.querySelector("#ratingsChart"), {
+          // 4. Create the two charts ONCE (render() will fill in their data).
+          barChart = new Chart(document.querySelector("#ratingsChart"), {
             type: "bar",
             data: {
-              labels: labels,
-              datasets: [{
-                label: "Number of films",
-                data: data,
-                backgroundColor: "#00b020" // Letterboxd green
-              }]
+              labels: RATING_VALUES.map(ratingLabel),
+              datasets: [{ label: "Number of films", data: [], backgroundColor: "#00b020" }]
             },
             options: {
               responsive: true,
               maintainAspectRatio: false,
-              scales: { y: { beginAtZero: true, max: 35, ticks: { precision: 0 } } }
+              scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
+              onClick: function (evt, elements) {
+                if (elements.length > 0) showMovies(RATING_VALUES[elements[0].index]);
+              },
+              onHover: function (evt, elements) {
+                evt.native.target.style.cursor = elements.length ? "pointer" : "default";
+              }
             }
           });
+          pieChart = new Chart(document.querySelector("#ratingsPie"), {
+            type: "pie",
+            data: { labels: [], datasets: [{ data: [], backgroundColor: [] }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: "right" } } }
+          });
 
-          const total = data.reduce(function (a, b) { return a + b; }, 0);
-          status.textContent = "Based on " + total + " rated films.";
+          // 5. When the dropdown changes, re-render for that decade.
+          decadeSelect.addEventListener("change", function () {
+            render(this.value === "all" ? "all" : Number(this.value));
+          });
+
+          // 6. First render: All Time.
+          render("all");
         })
         .catch(function (err) {
           status.textContent = "😅 Couldn't load the movie data. Make sure ratings.csv is in place.";
