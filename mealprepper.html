@@ -30,6 +30,18 @@
         line-height: 1;
         cursor: pointer;
       }
+      .fav-add {
+        margin-left: 3px;
+        background-color: #2e7d32;
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        font-size: 0.9rem;
+        line-height: 1;
+        cursor: pointer;
+      }
       .custom-form input {
         margin: 5px;
         padding: 8px;
@@ -53,6 +65,14 @@
         font-size: 1rem;
         margin-left: 6px;
       }
+      #search-btn {
+        padding: 9px 16px;
+        background-color: #2e7d32;
+        color: white;
+        border: none;
+        font-size: 1rem;
+      }
+      #search-status { min-height: 1.2em; }
       #form-msg { min-height: 1.2em; color: #2e7d32; }
       #meal-list {
         list-style: none;
@@ -104,6 +124,15 @@
       <p>Tap a food to add it to your plan.</p>
       <div id="food-buttons"></div>
 
+      <!-- Search the Open Food Facts database -->
+      <h2>Search foods</h2>
+      <div class="custom-form">
+        <input id="search-input" type="text" placeholder="Search a food..." />
+        <button id="search-btn">Search</button>
+      </div>
+      <p id="search-status"></p>
+      <div id="search-results"></div>
+
       <!-- Add a new food into My Foods, or just to today -->
       <h2>Add a food</h2>
       <div class="custom-form">
@@ -130,7 +159,7 @@
       // Pluralize a word for a count (cups, eggs) — leaving a few units unchanged.
       function plural(word, n) {
         if (n === 1) return word;
-        if (word === "oz" || word === "tbsp" || word === "tsp") return word;
+        if (word === "oz" || word === "tbsp" || word === "tsp" || word === "g" || word === "ml") return word;
         return word + "s";
       }
 
@@ -307,6 +336,92 @@
           renderPlan();
         }
       });
+
+      // --- Search the Open Food Facts database ---
+      const searchInput = document.querySelector("#search-input");
+      const searchStatus = document.querySelector("#search-status");
+      const searchResults = document.querySelector("#search-results");
+
+      // Save a (searched) food into My Foods, avoiding duplicates.
+      function saveToFavorites(food) {
+        const exists = userFoods.some(function (m) {
+          return m.name === food.name && (m.unit || "") === (food.unit || "") &&
+            m.protein === food.protein && m.cal === food.cal;
+        });
+        if (exists) {
+          searchStatus.textContent = "\"" + food.name + "\" is already in My Foods.";
+          return;
+        }
+        userFoods.push({ name: food.name, amount: food.amount || 1, unit: food.unit || "", protein: food.protein, cal: food.cal });
+        saveUserFoods();
+        renderFoodButtons();
+        searchStatus.textContent = "Saved \"" + food.name + "\" to My Foods.";
+      }
+
+      // Free USDA FoodData Central key. (Public in the page — it's a free,
+      // rate-limited key; regenerate at fdc.nal.usda.gov if ever needed.)
+      const USDA_API_KEY = "VVEnX45nwSZZyY9JpBzWnPeND3gE82juzNftGZBg";
+
+      // Pull a nutrient value out of a USDA food, by nutrient number / name.
+      function usdaProtein(food) {
+        const m = (food.foodNutrients || []).find(function (n) {
+          return String(n.nutrientNumber) === "203" || n.nutrientName === "Protein";
+        });
+        return m && m.value != null ? Number(m.value) : NaN;
+      }
+      function usdaCalories(food) {
+        const list = food.foodNutrients || [];
+        const m = list.find(function (n) { return String(n.nutrientNumber) === "208"; })
+          || list.find(function (n) { return n.unitName === "KCAL"; });
+        return m && m.value != null ? Number(m.value) : NaN;
+      }
+
+      async function searchFoods() {
+        const query = searchInput.value.trim();
+        if (query === "") { searchStatus.textContent = "Type a food to search."; return; }
+        searchStatus.textContent = "Searching…";
+        searchResults.innerHTML = "";
+        try {
+          const url = "https://api.nal.usda.gov/fdc/v1/foods/search?query=" +
+            encodeURIComponent(query) + "&pageSize=10&api_key=" + USDA_API_KEY;
+          const response = await fetch(url);
+          if (!response.ok) throw new Error("status " + response.status);
+          const data = await response.json();
+
+          // Keep only foods that actually have protein + calorie numbers (per 100g).
+          const foods = [];
+          (data.foods || []).forEach(function (item) {
+            const protein = usdaProtein(item);
+            const cal = usdaCalories(item);
+            const name = (item.description || "").trim();
+            if (!name || isNaN(protein) || isNaN(cal)) return;
+            foods.push({ name: name, amount: 100, unit: "g", protein: Math.round(protein), cal: Math.round(cal) });
+          });
+
+          if (foods.length === 0) {
+            searchStatus.textContent = "No results with nutrition info — try another search.";
+            return;
+          }
+          searchStatus.textContent = "Tap a result to add it to your plan, or + to save it to My Foods (per 100g):";
+          foods.slice(0, 6).forEach(function (food) {
+            const wrap = document.createElement("span");
+            wrap.className = "fav-wrap";
+            wrap.appendChild(makeAddButton(food));      // tap the food = add to today's plan
+            const save = document.createElement("button");
+            save.className = "fav-add";
+            save.textContent = "+";
+            save.title = "Save to My Foods";
+            save.addEventListener("click", function () { saveToFavorites(food); });
+            wrap.appendChild(save);
+            searchResults.appendChild(wrap);
+          });
+        } catch (err) {
+          searchStatus.textContent = "😅 Search failed — try again in a moment.";
+          console.error("Food search failed:", err);
+        }
+      }
+      document.querySelector("#search-btn").addEventListener("click", searchFoods);
+      searchInput.addEventListener("keydown", function (e) { if (e.key === "Enter") searchFoods(); });
 
       // First draw.
       renderFoodButtons();
