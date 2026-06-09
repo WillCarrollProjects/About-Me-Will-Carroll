@@ -100,28 +100,27 @@ nav a {
   font-weight: bold;
 }
 
-/* Red circular button for the click counter — with a glossy 3D look */
+/* Red circular click counter — a flat-topped 3D "arcade button" look */
 .red-circle {
-  width: 130px;
-  height: 130px;
+  width: 140px;
+  height: 140px;
   border-radius: 50%;
-  /* Radial gradient gives a shiny, rounded "ball" highlight in the top-left */
-  background: radial-gradient(circle at 35% 30%, #ff7b7b, #cc0000 70%);
+  background-color: #ff5252;   /* flat, matte red top */
   color: white;
   border: none;
-  font-size: 2.5rem;        /* big, since it now shows just the number */
+  font-size: 2.5rem;           /* big, since it shows just the number */
   font-weight: 700;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   text-align: center;
-  /* The solid offset shadow makes it look raised; the soft one is a drop shadow */
-  box-shadow: 0 8px 0 #8b0000, 0 12px 15px rgba(0, 0, 0, 0.4);
-  transition: transform 0.1s ease, box-shadow 0.1s ease;
+  /* Dark-red rim = the button's thickness; soft gray halo = the ground shadow */
+  box-shadow: 0 14px 0 #c0392b, 0 26px 24px rgba(120, 110, 100, 0.45);
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
 }
-/* When pressed, it sinks down and the shadow shrinks — a tactile 3D click */
+/* Pressing it sinks the button down onto its base */
 .red-circle:active {
-  transform: translateY(6px);
-  box-shadow: 0 2px 0 #8b0000, 0 4px 8px rgba(0, 0, 0, 0.4);
+  transform: translateY(10px);
+  box-shadow: 0 4px 0 #c0392b, 0 10px 14px rgba(120, 110, 100, 0.45);
 }

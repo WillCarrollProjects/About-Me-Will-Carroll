@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Meal Prepper — Will Carroll</title>
+    <link rel="stylesheet" href="styles.css" />
+    <style>
+      /* --- Page-specific styles for the Meal Prepper --- */
+      .food-btn {
+        margin: 8px;
+        padding: 10px 14px;
+        background-color: #2e7d32;
+        color: white;
+        border: none;
+        font-size: 0.95rem;
+      }
+      /* A favorite + its little remove button, grouped together */
+      .fav-wrap { display: inline-flex; align-items: center; margin: 8px; }
+      .fav-wrap .food-btn { margin: 0; }   /* the wrap handles spacing here */
+      .fav-remove {
+        margin-left: 3px;
+        background-color: #999;
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        font-size: 0.7rem;
+        line-height: 1;
+        cursor: pointer;
+      }
+      .custom-form input {
+        margin: 5px;
+        padding: 8px;
+        font-size: 1rem;
+        border: 2px solid #2e7d32;
+        border-radius: 8px;
+      }
+      #custom-protein, #custom-cal { width: 110px; }
+      #add-custom {
+        padding: 9px 16px;
+        background-color: #2e7d32;
+        color: white;
+        border: none;
+        font-size: 1rem;
+      }
+      #add-today {
+        padding: 9px 16px;
+        background-color: white;
+        color: #2e7d32;
+        border: 2px solid #2e7d32;
+        font-size: 1rem;
+        margin-left: 6px;
+      }
+      #form-msg { min-height: 1.2em; color: #2e7d32; }
+      #meal-list {
+        list-style: none;
+        padding: 0;
+        max-width: 520px;
+        margin: 0 auto;
+        text-align: left;
+      }
+      #meal-list li {
+        padding: 8px 4px;
+        border-bottom: 1px solid #ddd;
+      }
+      .qty-controls { float: right; }
+      .qty-controls button {
+        border: none;
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        cursor: pointer;
+        color: white;
+        margin-left: 4px;
+        font-size: 0.9rem;
+        line-height: 1;
+      }
+      .minus-btn, .plus-btn { background-color: #2e7d32; }
+      .remove-btn { background-color: #c0392b; }
+      #totals {
+        font-size: 1.4rem;
+        font-weight: 700;
+        color: #2e7d32;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Shared navigation — keep this IDENTICAL on every page -->
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="projects.html">Projects</a>
+      <a href="contact.html">Contact</a>
+      <a href="about.html">About</a>
+    </nav>
+
+    <main>
+      <h1>Meal Prepper</h1>
+      <p>Plan a day of meals and watch the protein and calories add up.</p>
+
+      <!-- My Foods: tap a button to add it to the plan -->
+      <h2>My Foods</h2>
+      <p>Tap a food to add it to your plan.</p>
+      <div id="food-buttons"></div>
+
+      <!-- Add a new food into My Foods, or just to today -->
+      <h2>Add a food</h2>
+      <div class="custom-form">
+        <input id="custom-name" type="text" placeholder="Food name" />
+        <input id="custom-protein" type="number" placeholder="Protein (g)" />
+        <input id="custom-cal" type="number" placeholder="Calories" />
+        <button id="add-custom">Save to My Foods</button>
+        <button id="add-today">Add to today only</button>
+      </div>
+      <p id="form-msg"></p>
+
+      <!-- The plan so far + running totals -->
+      <h2>Your plan</h2>
+      <ul id="meal-list"></ul>
+      <p id="totals"></p>
+    </main>
+
+    <script>
+      // Make text safe to drop into HTML (in case a food name has < & > characters).
+      function escapeHtml(s) {
+        return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      }
+
+      // Pluralize a word for a count (cups, eggs) — leaving a few units unchanged.
+      function plural(word, n) {
+        if (n === 1) return word;
+        if (word === "oz" || word === "tbsp" || word === "tsp") return word;
+        return word + "s";
+      }
+
+      // Describe `count` servings of a food:
+      //   measured units →  "Whole milk (2 cups)"
+      //   count foods    →  "2 eggs"
+      function servingLabel(food, count) {
+        const amount = (food.amount || 1) * count;
+        if (food.unit) {
+          return food.name + " (" + amount + " " + plural(food.unit, amount) + ")";
+        }
+        return amount + " " + plural(food.name, amount);
+      }
+
+      // Built-in starter foods. amount + unit let the serving scale with the count.
+      // unit "" means a count food (egg, banana) shown like "2 eggs".
+      const DEFAULT_FOODS = [
+        { name: "Whole milk", amount: 1, unit: "cup", protein: 8, cal: 150 },
+        { name: "egg", amount: 1, unit: "", protein: 6, cal: 70 },
+        { name: "Chicken breast", amount: 4, unit: "oz", protein: 35, cal: 185 },
+        { name: "Plain Greek yogurt", amount: 1, unit: "cup", protein: 20, cal: 140 },
+        { name: "Whey shake", amount: 1, unit: "scoop", protein: 25, cal: 120 },
+        { name: "White rice", amount: 1, unit: "cup", protein: 4, cal: 205 },
+        { name: "Peanut butter", amount: 1, unit: "tbsp", protein: 4, cal: 95 },
+        { name: "banana", amount: 1, unit: "", protein: 1, cal: 105 },
+        { name: "Oatmeal", amount: 1, unit: "cup", protein: 6, cal: 160 },
+        { name: "Ground beef 85/15", amount: 4, unit: "oz", protein: 22, cal: 240 }
+      ];
+
+      // Foods YOU add are saved in the browser so they're here next time.
+      function loadUserFoods() {
+        try { return JSON.parse(localStorage.getItem("mealPrepperFoods") || "[]"); }
+        catch (e) { return []; }
+      }
+      function saveUserFoods() {
+        try { localStorage.setItem("mealPrepperFoods", JSON.stringify(userFoods)); }
+        catch (e) { /* saving unavailable — favorites just won't persist */ }
+      }
+      let userFoods = loadUserFoods();
+
+      // The plan: foods currently added for the day (each with a quantity).
+      const meals = [];
+
+      const foodButtons = document.querySelector("#food-buttons");
+      const mealList = document.querySelector("#meal-list");
+      const totals = document.querySelector("#totals");
+      const formMsg = document.querySelector("#form-msg");
+
+      // Add a food to the plan. Adding the same food again just bumps its count.
+      function addFood(food) {
+        const existing = meals.find(function (m) {
+          return m.name === food.name && (m.unit || "") === (food.unit || "") &&
+            (m.amount || 1) === (food.amount || 1) && m.protein === food.protein && m.cal === food.cal;
+        });
+        if (existing) {
+          existing.qty += 1;
+        } else {
+          meals.push({
+            name: food.name, amount: food.amount || 1, unit: food.unit || "",
+            protein: food.protein, cal: food.cal, qty: 1
+          });
+        }
+        renderPlan();
+      }
+
+      // Build one "tap to add" button for a food.
+      function makeAddButton(food) {
+        const btn = document.createElement("button");
+        btn.className = "food-btn";
+        btn.textContent = servingLabel(food, 1) + " — " + food.protein + "g · " + food.cal;
+        btn.addEventListener("click", function () { addFood(food); });
+        return btn;
+      }
+
+      // Draw the My Foods buttons: built-ins, then your saved ones (with a remove ✕).
+      function renderFoodButtons() {
+        foodButtons.innerHTML = "";
+        DEFAULT_FOODS.forEach(function (food) {
+          foodButtons.appendChild(makeAddButton(food));
+        });
+        userFoods.forEach(function (food, i) {
+          const wrap = document.createElement("span");
+          wrap.className = "fav-wrap";
+          wrap.appendChild(makeAddButton(food));
+          const del = document.createElement("button");
+          del.className = "fav-remove";
+          del.textContent = "✕";
+          del.title = "Remove from My Foods";
+          del.addEventListener("click", function () {
+            userFoods.splice(i, 1);
+            saveUserFoods();
+            renderFoodButtons();
+          });
+          wrap.appendChild(del);
+          foodButtons.appendChild(wrap);
+        });
+      }
+
+      // Draw the plan list (with serving labels + qty controls) and the running totals.
+      function renderPlan() {
+        if (meals.length === 0) {
+          mealList.innerHTML = "<li>No foods added yet — tap one above.</li>";
+        } else {
+          mealList.innerHTML = meals.map(function (m, i) {
+            const label = servingLabel(m, m.qty);
+            const lineP = m.protein * m.qty;
+            const lineC = m.cal * m.qty;
+            return "<li>" + escapeHtml(label) + " — " + lineP + "g · " + lineC + " cal" +
+              " <span class='qty-controls'>" +
+              "<button class='minus-btn' data-index='" + i + "'>−</button>" +
+              "<button class='plus-btn' data-index='" + i + "'>+</button>" +
+              "<button class='remove-btn' data-index='" + i + "'>✕</button>" +
+              "</span></li>";
+          }).join("");
+        }
+        const totalP = meals.reduce(function (sum, m) { return sum + m.protein * m.qty; }, 0);
+        const totalC = meals.reduce(function (sum, m) { return sum + m.cal * m.qty; }, 0);
+        totals.textContent = "Total: " + totalP + "g protein · " + totalC + " cal";
+      }
+
+      // Read + validate the typed food. Returns { name, protein, cal, clear() } or null.
+      function readFoodForm() {
+        const nameEl = document.querySelector("#custom-name");
+        const proteinEl = document.querySelector("#custom-protein");
+        const calEl = document.querySelector("#custom-cal");
+        const name = nameEl.value.trim();
+        const protein = Number(proteinEl.value);
+        const cal = Number(calEl.value);
+        if (name === "" || proteinEl.value === "" || calEl.value === "" || isNaN(protein) || isNaN(cal)) {
+          formMsg.style.color = "#c0392b";
+          formMsg.textContent = "Please enter a food name, protein, and calories.";
+          return null;
+        }
+        return {
+          name: name, protein: protein, cal: cal,
+          clear: function () { nameEl.value = ""; proteinEl.value = ""; calEl.value = ""; }
+        };
+      }
+
+      // Option 1: save the typed food into My Foods (a new reusable button).
+      document.querySelector("#add-custom").addEventListener("click", function () {
+        const food = readFoodForm();
+        if (!food) return;
+        userFoods.push({ name: food.name, amount: 1, unit: "", protein: food.protein, cal: food.cal });
+        saveUserFoods();
+        renderFoodButtons();
+        formMsg.style.color = "#2e7d32";
+        formMsg.textContent = "Added \"" + food.name + "\" to My Foods — tap it to add to your plan.";
+        food.clear();
+      });
+
+      // Option 2: just add the typed food to today's plan (not saved for next time).
+      document.querySelector("#add-today").addEventListener("click", function () {
+        const food = readFoodForm();
+        if (!food) return;
+        addFood({ name: food.name, amount: 1, unit: "", protein: food.protein, cal: food.cal });
+        formMsg.style.color = "#2e7d32";
+        formMsg.textContent = "Added \"" + food.name + "\" to today's plan.";
+        food.clear();
+      });
+
+      // Handle the −, +, and ✕ controls on each plan line.
+      mealList.addEventListener("click", function (e) {
+        const idx = Number(e.target.getAttribute("data-index"));
+        if (e.target.classList.contains("plus-btn")) {
+          meals[idx].qty += 1;
+          renderPlan();
+        } else if (e.target.classList.contains("minus-btn")) {
+          meals[idx].qty -= 1;
+          if (meals[idx].qty <= 0) meals.splice(idx, 1);
+          renderPlan();
+        } else if (e.target.classList.contains("remove-btn")) {
+          meals.splice(idx, 1);
+          renderPlan();
+        }
+      });
+
+      // First draw.
+      renderFoodButtons();
+      renderPlan();
+    </script>
+  </body>
+</html>

@@ -131,7 +131,9 @@
       }
 
       // 1. Load the ratings CSV exported from Letterboxd (every film I've rated).
-      fetch("ratings.csv")
+      //    The "?t=" + Date.now() tag forces a fresh download each time, so an
+      //    updated ratings.csv always shows up (no stale browser cache).
+      fetch("ratings.csv?t=" + Date.now())
         .then(function (response) {
           if (!response.ok) throw new Error("Couldn't load ratings.csv (status " + response.status + ")");
           return response.text();
