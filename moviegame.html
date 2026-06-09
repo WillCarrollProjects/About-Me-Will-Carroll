@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Movie Games — Will Carroll</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+    <style>
+      /* --- Page-specific styles for the movie games --- */
+      .game-card {
+        max-width: 560px;
+        margin: 20px auto;
+        padding: 24px;
+        border: 1px solid #ddd;
+        border-radius: 14px;
+      }
+      #gmr-title { color: #2a75bb; margin: 10px 0 20px; }
+      .rating-btn {
+        margin: 5px;
+        padding: 10px 12px;
+        background-color: #2a75bb;
+        color: white;
+        border: none;
+        font-size: 1rem;
+      }
+      .rating-btn:disabled { opacity: 0.4; cursor: default; }
+      #gmr-reveal, #hl-reveal { font-size: 1.1rem; min-height: 1.4em; font-weight: 600; }
+      .menu-btn {
+        padding: 12px 24px;
+        font-size: 1.05rem;
+        font-weight: 700;
+        background-color: #ffcb05;
+        color: #2a75bb;
+        border: 2px solid #2a75bb;
+        margin: 6px;
+      }
+      #gmr-final, #hl-final { font-size: 1.6rem; font-weight: 800; color: #2a75bb; }
+      .round-info { color: #666; }
+      #hl-choices { display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; }
+      #hl-choices .vs { font-weight: 700; color: #666; }
+      .hl-side { display: inline-flex; flex-direction: column; align-items: center; }
+      .hl-rating { min-height: 1.4em; font-size: 1.3rem; font-weight: 700; margin-top: 8px; }
+      .hl-choice {
+        max-width: 200px;
+        min-height: 90px;
+        padding: 16px;
+        margin: 10px;
+        font-size: 1rem;
+        font-weight: 600;
+        background-color: #2a75bb;
+        color: white;
+        border: none;
+      }
+      .hl-choice:disabled { opacity: 0.5; }
+    </style>
+  </head>
+  <body>
+    <!-- Shared navigation — keep this IDENTICAL on every page -->
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="projects.html">Projects</a>
+      <a href="contact.html">Contact</a>
+      <a href="about.html">About</a>
+    </nav>
+
+    <main>
+      <h1>Movie Games 🎬</h1>
+
+      <!-- Mode select -->
+      <div id="mode-screen" class="game-card">
+        <p>Two games built from the movies I rated on Letterboxd. Pick one:</p>
+        <button id="mode-gmr" class="menu-btn">Guess My Rating</button>
+        <button id="mode-hl" class="menu-btn">Higher or Lower</button>
+        <p id="loading-msg"></p>
+      </div>
+
+      <!-- Guess My Rating -->
+      <div id="gmr-screen" class="game-card" style="display: none;">
+        <p id="gmr-round" class="round-info"></p>
+        <h2 id="gmr-title"></h2>
+        <p>What did I rate it?</p>
+        <div id="gmr-buttons"></div>
+        <p id="gmr-reveal"></p>
+        <button id="gmr-next" class="menu-btn" style="display: none;">Next</button>
+      </div>
+      <div id="gmr-end" class="game-card" style="display: none;">
+        <h2>Final score</h2>
+        <p id="gmr-final"></p>
+        <p>📸 Screenshot it and challenge your friends to beat you!</p>
+        <button id="gmr-again" class="menu-btn">Play again</button>
+        <button class="menu-btn to-menu">Back to menu</button>
+      </div>
+
+      <!-- Higher or Lower -->
+      <div id="hl-screen" class="game-card" style="display: none;">
+        <p id="hl-streak" class="round-info"></p>
+        <p>Which one did I rate higher?</p>
+        <div id="hl-choices">
+          <div class="hl-side">
+            <button id="hl-a" class="hl-choice"></button>
+            <div id="hl-a-rating" class="hl-rating"></div>
+          </div>
+          <span class="vs">vs</span>
+          <div class="hl-side">
+            <button id="hl-b" class="hl-choice"></button>
+            <div id="hl-b-rating" class="hl-rating"></div>
+          </div>
+        </div>
+        <p id="hl-reveal"></p>
+        <button id="hl-next" class="menu-btn" style="display: none;">Next</button>
+        <div id="hl-gameover" style="display: none;">
+          <button id="hl-again" class="menu-btn">Play again</button>
+          <button class="menu-btn to-menu">Back to menu</button>
+        </div>
+      </div>
+    </main>
+
+    <script>
+      // Turn a rating number into stars, e.g. 3.5 -> "★★★½", 0.5 -> "½"
+      function ratingLabel(r) {
+        const full = Math.floor(r);
+        const half = r % 1 !== 0;
+        return "★".repeat(full) + (half ? "½" : "");
+      }
+
+      const RATING_VALUES = [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5];
+      const ROUNDS = 5;
+
+      const loadingMsg = document.querySelector("#loading-msg");
+      let allMovies = []; // { name, year, rating }
+
+      // Show one screen, hide the others.
+      function showScreen(id) {
+        document.querySelectorAll(".game-card").forEach(function (el) { el.style.display = "none"; });
+        document.querySelector("#" + id).style.display = "block";
+      }
+
+      // Pick n random distinct movies.
+      function pickRandom(arr, n) {
+        const copy = arr.slice();
+        const out = [];
+        while (out.length < n && copy.length) {
+          out.push(copy.splice(Math.floor(Math.random() * copy.length), 1)[0]);
+        }
+        return out;
+      }
+      function titleOf(m) { return m.name + (m.year ? " (" + m.year + ")" : ""); }
+
+      // Load my Letterboxd ratings once.
+      function loadMovies() {
+        return fetch("ratings.csv?t=" + Date.now())
+          .then(function (r) { if (!r.ok) throw new Error("ratings.csv " + r.status); return r.text(); })
+          .then(function (csv) {
+            const rows = Papa.parse(csv, { header: true, skipEmptyLines: true }).data;
+            allMovies = [];
+            rows.forEach(function (row) {
+              const rating = Number(row["Rating"]);
+              const name = (row["Name"] || "").trim();
+              if (name && !isNaN(rating)) allMovies.push({ name: name, year: row["Year"], rating: rating });
+            });
+          });
+      }
+      // Make sure the data is loaded, then run a callback.
+      function ensureLoaded(then) {
+        if (allMovies.length) { then(); return; }
+        loadingMsg.textContent = "Loading movies…";
+        loadMovies().then(function () { loadingMsg.textContent = ""; then(); })
+          .catch(function (err) { loadingMsg.textContent = "😅 Couldn't load the movies — try again."; console.error(err); });
+      }
+
+      /* ===== Game 1: Guess My Rating ===== */
+      let gmrMovies = [], gmrRound = 0, gmrScore = 0;
+      const gmrRoundEl = document.querySelector("#gmr-round");
+      const gmrTitle = document.querySelector("#gmr-title");
+      const gmrButtons = document.querySelector("#gmr-buttons");
+      const gmrReveal = document.querySelector("#gmr-reveal");
+      const gmrNext = document.querySelector("#gmr-next");
+
+      function startGMR() {
+        gmrMovies = pickRandom(allMovies, ROUNDS);
+        gmrRound = 0; gmrScore = 0;
+        showScreen("gmr-screen");
+        showGMRRound();
+      }
+      function showGMRRound() {
+        const movie = gmrMovies[gmrRound];
+        gmrRoundEl.textContent = "Round " + (gmrRound + 1) + " of " + ROUNDS + "  ·  Score: " + gmrScore;
+        gmrTitle.textContent = titleOf(movie);
+        gmrReveal.textContent = "";
+        gmrNext.style.display = "none";
+        gmrButtons.innerHTML = "";
+        RATING_VALUES.forEach(function (v) {
+          const btn = document.createElement("button");
+          btn.className = "rating-btn";
+          btn.textContent = ratingLabel(v);
+          btn.addEventListener("click", function () { gmrGuess(v); });
+          gmrButtons.appendChild(btn);
+        });
+      }
+      function gmrGuess(guess) {
+        const actual = gmrMovies[gmrRound].rating;
+        const points = Math.max(0, Math.round(100 - Math.abs(guess - actual) * 40));
+        gmrScore += points;
+        gmrButtons.querySelectorAll("button").forEach(function (b) { b.disabled = true; });
+        gmrReveal.textContent = "You guessed " + ratingLabel(guess) + " · I rated " +
+          ratingLabel(actual) + "  →  +" + points + " points";
+        gmrRoundEl.textContent = "Round " + (gmrRound + 1) + " of " + ROUNDS + "  ·  Score: " + gmrScore;
+        gmrNext.style.display = "inline-block";
+      }
+      gmrNext.addEventListener("click", function () {
+        gmrRound += 1;
+        if (gmrRound < ROUNDS) showGMRRound();
+        else { document.querySelector("#gmr-final").textContent = gmrScore + " / " + (ROUNDS * 100); showScreen("gmr-end"); }
+      });
+
+      /* ===== Game 2: Higher or Lower ===== */
+      let hlA, hlB, hlStreak = 0, hlBest = 0;
+      const hlStreakEl = document.querySelector("#hl-streak");
+      const hlAbtn = document.querySelector("#hl-a");
+      const hlBbtn = document.querySelector("#hl-b");
+      const hlAratingEl = document.querySelector("#hl-a-rating");
+      const hlBratingEl = document.querySelector("#hl-b-rating");
+      const hlReveal = document.querySelector("#hl-reveal");
+      const hlNext = document.querySelector("#hl-next");
+      const hlGameover = document.querySelector("#hl-gameover");
+
+      function startHL() {
+        hlStreak = 0;
+        showScreen("hl-screen");
+        newHLPair();
+      }
+      function newHLPair() {
+        // Re-roll until the two movies have DIFFERENT ratings (no ties).
+        let pair, attempts = 0;
+        do {
+          pair = pickRandom(allMovies, 2);
+          attempts++;
+        } while (pair.length === 2 && pair[0].rating === pair[1].rating && attempts < 50);
+        hlA = pair[0]; hlB = pair[1];
+        hlStreakEl.textContent = "Streak: " + hlStreak;
+        hlAbtn.textContent = titleOf(hlA);
+        hlBbtn.textContent = titleOf(hlB);
+        hlAbtn.disabled = false; hlBbtn.disabled = false;
+        hlAratingEl.textContent = ""; hlBratingEl.textContent = "";
+        hlReveal.textContent = "";
+        hlNext.style.display = "none";
+        hlGameover.style.display = "none";
+      }
+      function hlPick(picked, other) {
+        hlAbtn.disabled = true; hlBbtn.disabled = true;
+        // Reveal each movie's rating on its OWN side; the higher one in green.
+        hlAratingEl.textContent = ratingLabel(hlA.rating);
+        hlBratingEl.textContent = ratingLabel(hlB.rating);
+        const aHigher = hlA.rating > hlB.rating;
+        hlAratingEl.style.color = aHigher ? "#2e7d32" : "#999";
+        hlBratingEl.style.color = aHigher ? "#999" : "#2e7d32";
+
+        if (picked.rating >= other.rating) {
+          hlStreak += 1;
+          if (hlStreak > hlBest) hlBest = hlStreak;
+          hlStreakEl.textContent = "Streak: " + hlStreak;
+          hlReveal.textContent = "✅ Right!";
+          hlNext.style.display = "inline-block";
+        } else {
+          hlReveal.textContent = "❌ Game over! Streak: " + hlStreak + " · Best: " + hlBest;
+          hlGameover.style.display = "block";
+        }
+      }
+      hlAbtn.addEventListener("click", function () { hlPick(hlA, hlB); });
+      hlBbtn.addEventListener("click", function () { hlPick(hlB, hlA); });
+      hlNext.addEventListener("click", newHLPair);
+
+      /* ===== Wiring ===== */
+      document.querySelector("#mode-gmr").addEventListener("click", function () { ensureLoaded(startGMR); });
+      document.querySelector("#mode-hl").addEventListener("click", function () { ensureLoaded(startHL); });
+      document.querySelector("#gmr-again").addEventListener("click", startGMR);
+      document.querySelector("#hl-again").addEventListener("click", startHL);
+      document.querySelectorAll(".to-menu").forEach(function (b) {
+        b.addEventListener("click", function () { showScreen("mode-screen"); });
+      });
+    </script>
+  </body>
+</html>
