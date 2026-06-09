@@ -53,6 +53,12 @@
         border: none;
       }
       .hl-choice:disabled { opacity: 0.5; }
+      .save-row input { padding: 8px; font-size: 1rem; border: 2px solid #2a75bb; border-radius: 8px; margin: 5px; }
+      #gmr-save-msg, #hl-save-msg { min-height: 1.2em; font-weight: 600; }
+      .leaderboard { margin: 16px auto; }
+      .leaderboard h3 { margin-bottom: 4px; }
+      .leaderboard ol { text-align: left; max-width: 280px; margin: 8px auto; }
+      .leaderboard li { padding: 3px 0; }
     </style>
   </head>
   <body>
@@ -87,7 +93,13 @@
       <div id="gmr-end" class="game-card" style="display: none;">
         <h2>Final score</h2>
         <p id="gmr-final"></p>
-        <p>📸 Screenshot it and challenge your friends to beat you!</p>
+        <p>Save your score to the leaderboard and challenge your friends!</p>
+        <div class="save-row">
+          <input id="gmr-name" type="text" placeholder="Your name" maxlength="20" />
+          <button id="gmr-save" class="menu-btn">Save my score</button>
+        </div>
+        <p id="gmr-save-msg"></p>
+        <div id="gmr-board" class="leaderboard"></div>
         <button id="gmr-again" class="menu-btn">Play again</button>
         <button class="menu-btn to-menu">Back to menu</button>
       </div>
@@ -110,6 +122,12 @@
         <p id="hl-reveal"></p>
         <button id="hl-next" class="menu-btn" style="display: none;">Next</button>
         <div id="hl-gameover" style="display: none;">
+          <div class="save-row">
+            <input id="hl-name" type="text" placeholder="Your name" maxlength="20" />
+            <button id="hl-save" class="menu-btn">Save my streak</button>
+          </div>
+          <p id="hl-save-msg"></p>
+          <div id="hl-board" class="leaderboard"></div>
           <button id="hl-again" class="menu-btn">Play again</button>
           <button class="menu-btn to-menu">Back to menu</button>
         </div>
@@ -210,8 +228,14 @@
       }
       gmrNext.addEventListener("click", function () {
         gmrRound += 1;
-        if (gmrRound < ROUNDS) showGMRRound();
-        else { document.querySelector("#gmr-final").textContent = gmrScore + " / " + (ROUNDS * 100); showScreen("gmr-end"); }
+        if (gmrRound < ROUNDS) {
+          showGMRRound();
+        } else {
+          document.querySelector("#gmr-final").textContent = gmrScore + " / " + (ROUNDS * 100);
+          resetSaveUI("#gmr-name", "#gmr-save", "#gmr-save-msg");
+          showScreen("gmr-end");
+          loadLeaderboard("gmr", document.querySelector("#gmr-board"));
+        }
       });
 
       /* ===== Game 2: Higher or Lower ===== */
@@ -264,12 +288,68 @@
           hlNext.style.display = "inline-block";
         } else {
           hlReveal.textContent = "❌ Game over! Streak: " + hlStreak + " · Best: " + hlBest;
+          resetSaveUI("#hl-name", "#hl-save", "#hl-save-msg");
           hlGameover.style.display = "block";
+          loadLeaderboard("hl", document.querySelector("#hl-board"));
         }
       }
       hlAbtn.addEventListener("click", function () { hlPick(hlA, hlB); });
       hlBbtn.addEventListener("click", function () { hlPick(hlB, hlA); });
       hlNext.addEventListener("click", newHLPair);
+
+      /* ===== Leaderboard (Supabase backend) ===== */
+      const SB_URL = "https://ebewnilkkambuxagccai.supabase.co/rest/v1/leaderboard";
+      // anon public key — safe to expose; the table's policies only allow read + insert.
+      const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImViZXduaWxra2FtYnV4YWdjY2FpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMjg5MTUsImV4cCI6MjA5NjYwNDkxNX0.hdCChehde6CFvdgRXl5GzucA55MsibziSFKwUBQlAXo";
+      const SB_HEADERS = { apikey: SB_KEY, Authorization: "Bearer " + SB_KEY, "Content-Type": "application/json" };
+
+      function escapeHtml(s) {
+        return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      }
+      function resetSaveUI(nameId, saveId, msgId) {
+        const n = document.querySelector(nameId); n.disabled = false; n.value = "";
+        document.querySelector(saveId).disabled = false;
+        document.querySelector(msgId).textContent = "";
+      }
+      // POST a score to the leaderboard.
+      function submitScore(name, game, score) {
+        return fetch(SB_URL, {
+          method: "POST",
+          headers: Object.assign({ Prefer: "return=minimal" }, SB_HEADERS),
+          body: JSON.stringify({ name: name, game: game, score: score })
+        }).then(function (r) { if (!r.ok) throw new Error("save " + r.status); });
+      }
+      // GET the top 10 scores for a game and render them.
+      function loadLeaderboard(game, boardEl) {
+        boardEl.innerHTML = "<p>Loading leaderboard…</p>";
+        return fetch(SB_URL + "?game=eq." + game + "&select=name,score&order=score.desc&limit=10", { headers: SB_HEADERS })
+          .then(function (r) { if (!r.ok) throw new Error("load " + r.status); return r.json(); })
+          .then(function (rows) {
+            if (!rows.length) { boardEl.innerHTML = "<h3>🏆 Leaderboard</h3><p>No scores yet — be the first!</p>"; return; }
+            let html = "<h3>🏆 Leaderboard</h3><ol>";
+            rows.forEach(function (row) { html += "<li>" + escapeHtml(row.name) + " — " + row.score + "</li>"; });
+            html += "</ol>";
+            boardEl.innerHTML = html;
+          })
+          .catch(function (err) { boardEl.innerHTML = "<p>😅 Couldn't load the leaderboard.</p>"; console.error(err); });
+      }
+      // Wire a "save" button: validate name, submit the score, reload the board.
+      function setupSave(saveId, nameId, msgId, boardId, game, getScore) {
+        document.querySelector(saveId).addEventListener("click", function () {
+          const btn = this;
+          const nameEl = document.querySelector(nameId);
+          const msgEl = document.querySelector(msgId);
+          const name = nameEl.value.trim();
+          if (name === "") { msgEl.style.color = "#c0392b"; msgEl.textContent = "Enter a name first!"; return; }
+          btn.disabled = true; nameEl.disabled = true;
+          msgEl.style.color = "#2e7d32"; msgEl.textContent = "Saving…";
+          submitScore(name, game, getScore())
+            .then(function () { msgEl.textContent = "Saved! 🎉"; return loadLeaderboard(game, document.querySelector(boardId)); })
+            .catch(function (err) { msgEl.style.color = "#c0392b"; msgEl.textContent = "Couldn't save — try again."; btn.disabled = false; nameEl.disabled = false; console.error(err); });
+        });
+      }
+      setupSave("#gmr-save", "#gmr-name", "#gmr-save-msg", "#gmr-board", "gmr", function () { return gmrScore; });
+      setupSave("#hl-save", "#hl-name", "#hl-save-msg", "#hl-board", "hl", function () { return hlStreak; });
 
       /* ===== Wiring ===== */
       document.querySelector("#mode-gmr").addEventListener("click", function () { ensureLoaded(startGMR); });
