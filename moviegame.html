@@ -8,6 +8,7 @@
     <script src="theme.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="settings.js"></script>
     <style>
       /* --- Page-specific styles for the movie games --- */
       .game-card {
@@ -105,7 +106,7 @@
           <input id="gmr-name" type="text" placeholder="Your name" maxlength="20" />
           <button id="gmr-save" class="menu-btn">Save my score</button>
         </div>
-        <p id="gmr-signin" style="display: none;"><a href="signin.html">Sign in</a> to save your score to the leaderboard.</p>
+        <p id="gmr-signin" style="display: none;"><a href="signin.html">Create an account to save my score!</a></p>
         <p id="gmr-save-msg"></p>
         <div id="gmr-board" class="leaderboard"></div>
         <button id="gmr-again" class="menu-btn">Play again</button>
@@ -134,7 +135,7 @@
             <input id="hl-name" type="text" placeholder="Your name" maxlength="20" />
             <button id="hl-save" class="menu-btn">Save my streak</button>
           </div>
-          <p id="hl-signin" style="display: none;"><a href="signin.html">Sign in</a> to save your streak to the leaderboard.</p>
+          <p id="hl-signin" style="display: none;"><a href="signin.html">Create an account to save my streak!</a></p>
           <p id="hl-save-msg"></p>
           <div id="hl-board" class="leaderboard"></div>
           <button id="hl-again" class="menu-btn">Play again</button>

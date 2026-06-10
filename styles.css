@@ -163,7 +163,7 @@ nav a:hover { color: var(--nav-hover); }
   min-width: 200px;
 }
 #settings-panel h3 { margin: 0 0 10px; }
-#theme-toggle {
+#settings-panel button {
   background-color: var(--btn-bg);
   color: var(--btn-text);
   border: 1px solid var(--btn-border);

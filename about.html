@@ -7,6 +7,8 @@
     <!-- Pull in the shared styles used by every page on the site -->
     <link rel="stylesheet" href="styles.css">
     <script src="theme.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="settings.js"></script>
   </head>
   <body>
     <!-- Shared navigation — keep this IDENTICAL on every page -->
@@ -26,8 +28,9 @@
       <div><a href="pokemon.html" id="pokemon-button" style="display: inline-block; background-color: hotpink; color: white; font-weight: 600; padding: 12px 20px; font-size: 16px; border: none; border-radius: 10px; text-decoration: none;">Pokémon</a></div>
     </div>
 
-    <!-- Top-right fixed stack: color + fact buttons, then the click counter below -->
-    <div style="position: fixed; top: 20px; right: 20px; z-index: 1000; display: flex; flex-direction: column; align-items: flex-end; gap: 15px;">
+    <!-- Top-right fixed stack: color + fact buttons, then the click counter below.
+         Pushed down (top: 70px) so it clears the settings button in the corner. -->
+    <div style="position: fixed; top: 70px; right: 20px; z-index: 1000; display: flex; flex-direction: column; align-items: flex-end; gap: 15px;">
       <button id="color-button" class="white-btn">Change colors to navy</button>
       <button id="fact-button" class="white-btn">Tell me a fact!</button>
       <button id="counter-button" class="red-circle">0</button>
