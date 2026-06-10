@@ -6,6 +6,7 @@
     <title>Home — Will Carroll</title>
     <link rel="stylesheet" href="styles.css" />
     <script src="theme.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   </head>
   <body>
     <!-- Settings button + panel (theme switcher) -->
@@ -14,6 +15,9 @@
       <h3>Settings</h3>
       <p>Theme</p>
       <button id="theme-toggle"></button>
+      <hr style="border: none; border-top: 1px solid var(--card-border); margin: 16px 0;" />
+      <p>Account</p>
+      <div id="auth-area"></div>
     </div>
 
     <!-- Everything unique to THIS page goes inside <main> -->
@@ -63,6 +67,29 @@
         toggleSiteTheme();
         updateToggleLabel();
       });
+
+      // --- Account (Supabase auth) ---
+      const SB_BASE = "https://ebewnilkkambuxagccai.supabase.co";
+      const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImViZXduaWxra2FtYnV4YWdjY2FpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMjg5MTUsImV4cCI6MjA5NjYwNDkxNX0.hdCChehde6CFvdgRXl5GzucA55MsibziSFKwUBQlAXo";
+      const sb = supabase.createClient(SB_BASE, SB_KEY);
+      const authArea = document.querySelector("#auth-area");
+
+      async function refreshAuth() {
+        const { data } = await sb.auth.getUser();
+        const user = data.user;
+        if (user) {
+          const uname = (user.user_metadata && user.user_metadata.username) || user.email;
+          authArea.innerHTML = "<p>Signed in as <strong></strong></p><button id='home-signout'>Sign out</button>";
+          authArea.querySelector("strong").textContent = uname;
+          authArea.querySelector("#home-signout").addEventListener("click", async function () {
+            await sb.auth.signOut();
+            refreshAuth();
+          });
+        } else {
+          authArea.innerHTML = "<a href='signin.html'><button id='home-signin'>Sign in</button></a>";
+        }
+      }
+      refreshAuth();
     </script>
   </body>
 </html>

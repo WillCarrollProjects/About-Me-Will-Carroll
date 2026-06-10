@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sign In — Will Carroll</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script src="theme.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+      .auth-card {
+        max-width: 360px;
+        margin: 24px auto;
+        padding: 24px;
+        border: 1px solid var(--card-border);
+        background-color: var(--card-bg);
+        border-radius: 8px;
+        text-align: left;
+      }
+      .auth-card input {
+        display: block;
+        width: 100%;
+        box-sizing: border-box;
+        margin: 8px 0;
+        padding: 10px;
+        font-size: 1rem;
+        border: 1px solid var(--card-border);
+        border-radius: 6px;
+        background-color: var(--bg);
+        color: var(--text);
+      }
+      .auth-card button {
+        margin: 8px 8px 0 0;
+        padding: 10px 18px;
+        font-weight: 700;
+        background-color: var(--btn-bg);
+        color: var(--btn-text);
+        border: 1px solid var(--btn-border);
+        border-radius: 6px;
+      }
+      #auth-msg { min-height: 1.2em; margin-top: 12px; font-weight: 600; }
+    </style>
+  </head>
+  <body>
+    <!-- Shared navigation — keep this IDENTICAL on every page -->
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="projects.html">Projects</a>
+      <a href="contact.html">Contact</a>
+      <a href="about.html">About</a>
+    </nav>
+
+    <main>
+      <h1>Sign In</h1>
+
+      <!-- Shown when signed OUT: log in / sign up -->
+      <div id="signed-out" class="auth-card">
+        <p>Log in, or sign up to create an account. Your <strong>username</strong> is what shows on the leaderboards.</p>
+        <input id="email" type="email" placeholder="Email" />
+        <input id="password" type="password" placeholder="Password" />
+        <input id="username" type="text" placeholder="Username (only needed to sign up)" maxlength="20" />
+        <button id="login-btn">Log in</button>
+        <button id="signup-btn">Sign up</button>
+        <p id="auth-msg"></p>
+      </div>
+
+      <!-- Shown when signed IN -->
+      <div id="signed-in" class="auth-card" style="display: none;">
+        <p id="welcome"></p>
+        <button id="signout-btn">Sign out</button>
+        <p style="margin-top: 14px;"><a href="index.html">← Back home</a> · <a href="moviegame.html">Play the games →</a></p>
+      </div>
+    </main>
+
+    <script>
+      const SB_BASE = "https://ebewnilkkambuxagccai.supabase.co";
+      const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImViZXduaWxra2FtYnV4YWdjY2FpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMjg5MTUsImV4cCI6MjA5NjYwNDkxNX0.hdCChehde6CFvdgRXl5GzucA55MsibziSFKwUBQlAXo";
+      const sb = supabase.createClient(SB_BASE, SB_KEY);
+
+      const msg = document.querySelector("#auth-msg");
+      const signedOut = document.querySelector("#signed-out");
+      const signedIn = document.querySelector("#signed-in");
+
+      // Show the right view depending on whether someone is logged in.
+      async function refresh() {
+        const { data } = await sb.auth.getUser();
+        const user = data.user;
+        if (user) {
+          signedOut.style.display = "none";
+          signedIn.style.display = "block";
+          const uname = (user.user_metadata && user.user_metadata.username) || user.email;
+          document.querySelector("#welcome").textContent = "Signed in as " + uname + " 🎬";
+        } else {
+          signedOut.style.display = "block";
+          signedIn.style.display = "none";
+        }
+      }
+      refresh();
+
+      // Sign up: email + password + username (username saved in the account).
+      document.querySelector("#signup-btn").addEventListener("click", async function () {
+        const email = document.querySelector("#email").value.trim();
+        const password = document.querySelector("#password").value;
+        const username = document.querySelector("#username").value.trim();
+        if (!email || !password || !username) {
+          msg.style.color = "#c0392b";
+          msg.textContent = "Sign up needs an email, a password, and a username.";
+          return;
+        }
+        msg.style.color = "#888"; msg.textContent = "Creating account…";
+        const { data, error } = await sb.auth.signUp({ email: email, password: password, options: { data: { username: username } } });
+        if (error) { msg.style.color = "#c0392b"; msg.textContent = error.message; return; }
+        if (!data.session) {
+          msg.style.color = "#c0392b";
+          msg.textContent = "Account made — check your email to confirm before logging in.";
+          return;
+        }
+        msg.style.color = "#2e7d32"; msg.textContent = "Account created — you're in!";
+        refresh();
+      });
+
+      // Log in: email + password.
+      document.querySelector("#login-btn").addEventListener("click", async function () {
+        const email = document.querySelector("#email").value.trim();
+        const password = document.querySelector("#password").value;
+        if (!email || !password) {
+          msg.style.color = "#c0392b";
+          msg.textContent = "Enter your email and password.";
+          return;
+        }
+        msg.style.color = "#888"; msg.textContent = "Logging in…";
+        const { error } = await sb.auth.signInWithPassword({ email: email, password: password });
+        if (error) { msg.style.color = "#c0392b"; msg.textContent = error.message; return; }
+        msg.style.color = "#2e7d32"; msg.textContent = "Logged in!";
+        refresh();
+      });
+
+      document.querySelector("#signout-btn").addEventListener("click", async function () {
+        await sb.auth.signOut();
+        refresh();
+      });
+    </script>
+  </body>
+</html>
