@@ -1,49 +1,78 @@
-/* styles.css — shared Letterboxd-style dark theme for EVERY page on the site.
-   Link it from any page with: <link rel="stylesheet" href="styles.css"> */
+/* styles.css — shared theme for every page.
+   Dark (Letterboxd) is the default. Adding the class "light-theme" to <html>
+   (handled by theme.js) switches to the original light look. */
 
-/* Inter — a clean, free stand-in for Letterboxd's typeface */
+/* Load both fonts — dark theme uses Inter, light theme uses Poppins */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
 
-/* Letterboxd palette:
-   background #14181c · panels #2c3440 · text #99aabb
-   accents: green #00e054 · blue #40bcf4 · orange #ff8000 */
+/* ===== Theme variables ===== */
+:root {                       /* DARK — Letterboxd (default) */
+  --font: "Inter", "Helvetica Neue", Arial, sans-serif;
+  --bg: #14181c;
+  --text: #99aabb;
+  --heading: #ffffff;
+  --link: #00e054;
+  --link-hover: #40bcf4;
+  --card-bg: #2c3440;
+  --card-border: #455667;
+  --btn-bg: #2c3440;
+  --btn-text: #ffffff;
+  --btn-border: #455667;
+  --nav-link: #99aabb;
+  --nav-hover: #00e054;
+}
+.light-theme {                /* LIGHT — the original look */
+  --font: "Poppins", sans-serif;
+  --bg: #ffffff;
+  --text: #333333;
+  --heading: #222222;
+  --link: #1565c0;
+  --link-hover: #0d47a1;
+  --card-bg: #ffffff;
+  --card-border: #dddddd;
+  --btn-bg: #ffffff;
+  --btn-text: #000000;
+  --btn-border: #000000;
+  --nav-link: #333333;
+  --nav-hover: #000000;
+}
+
 body {
-  font-family: "Inter", "Helvetica Neue", Arial, sans-serif;
+  font-family: var(--font);
   text-align: center;
-  background-color: #14181c;
-  color: #99aabb;
+  background-color: var(--bg);
+  color: var(--text);
   margin: 0;
   padding: 24px 16px 60px;
 }
 
-/* Bright headings */
-h1, h2, h3 { color: #ffffff; }
+h1, h2, h3 { color: var(--heading); }
 
-/* Links: Letterboxd green, brightening to blue on hover */
-a { color: #00e054; text-decoration: none; }
-a:hover { color: #40bcf4; }
+a { color: var(--link); text-decoration: none; }
+a:hover { color: var(--link-hover); }
 
 button {
-  border-radius: 4px;   /* Letterboxd uses subtle rounding */
+  border-radius: 4px;
   cursor: pointer;
 }
 
 div { margin-bottom: 15px; }
 
-/* Navigation bar — small uppercase links, like Letterboxd's */
+/* Navigation bar */
 nav { margin-bottom: 30px; }
 nav a {
   margin: 0 10px;
   text-decoration: none;
   font-weight: 600;
-  color: #99aabb;
+  color: var(--nav-link);
   text-transform: uppercase;
   font-size: 0.85rem;
   letter-spacing: 0.04em;
 }
-nav a:hover { color: #00e054; }
+nav a:hover { color: var(--nav-hover); }
 
-/* Projects page: a responsive grid of dark cards */
+/* Projects page: a responsive grid of cards */
 .project-grid {
   display: flex;
   flex-wrap: wrap;
@@ -51,22 +80,17 @@ nav a:hover { color: #00e054; }
   gap: 20px;
 }
 .card {
-  border: 1px solid #456;
-  background-color: #2c3440;
+  border: 1px solid var(--card-border);
+  background-color: var(--card-bg);
   border-radius: 6px;
   padding: 20px;
   max-width: 300px;
   text-align: left;
-  color: #99aabb;
+  color: var(--text);
 }
 
-/* Home page: one-sentence intro under the name */
-.intro {
-  font-size: 1.25rem;
-  color: #8899aa;
-}
-
-/* Home page: About Me section — a readable, centered column */
+/* Home page: intro + about */
+.intro { font-size: 1.25rem; color: var(--text); }
 .about {
   max-width: 600px;
   margin: 30px auto;
@@ -74,7 +98,7 @@ nav a:hover { color: #00e054; }
 }
 .about p { line-height: 1.6; }
 
-/* Home page: the row of navigation buttons, below the content */
+/* Home page: bottom navigation buttons */
 .home-nav {
   display: flex;
   justify-content: center;
@@ -86,31 +110,68 @@ nav a:hover { color: #00e054; }
   font-size: 1.4rem;
   font-weight: 700;
   padding: 12px 28px;
-  background-color: #2c3440;
-  color: #ffffff;
-  border: 1px solid #456;
+  background-color: var(--btn-bg);
+  color: var(--btn-text);
+  border: 1px solid var(--btn-border);
   border-radius: 6px;
   text-decoration: none;
 }
 .home-nav a:hover {
-  background-color: #00e054;
-  color: #14181c;
+  background-color: var(--link);
+  color: var(--bg);
 }
 
-/* Dark button matching the home page buttons (used on the About page) */
+/* Button style matching the home buttons (About page) */
 .white-btn {
   font-size: 1.1rem;
   font-weight: 700;
   padding: 10px 22px;
-  background-color: #2c3440;
-  color: #ffffff;
-  border: 1px solid #456;
+  background-color: var(--btn-bg);
+  color: var(--btn-text);
+  border: 1px solid var(--btn-border);
   border-radius: 6px;
   cursor: pointer;
 }
 
 /* Make the fun fact stand out when it appears */
-#fact-display { font-weight: bold; color: #ffffff; }
+#fact-display { font-weight: bold; color: var(--heading); }
+
+/* ===== Settings button + panel (home page) ===== */
+#settings-btn {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 1000;
+  background-color: var(--card-bg);
+  color: var(--text);
+  border: 1px solid var(--card-border);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 1.1rem;
+}
+#settings-panel {
+  position: fixed;
+  top: 58px;
+  right: 16px;
+  z-index: 1000;
+  background-color: var(--card-bg);
+  color: var(--text);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  padding: 16px 18px;
+  text-align: left;
+  min-width: 200px;
+}
+#settings-panel h3 { margin: 0 0 10px; }
+#theme-toggle {
+  background-color: var(--btn-bg);
+  color: var(--btn-text);
+  border: 1px solid var(--btn-border);
+  border-radius: 6px;
+  padding: 8px 14px;
+  cursor: pointer;
+  font-weight: 600;
+}
 
 /* Red circular click counter — a flat-topped 3D "arcade button" look */
 .red-circle {

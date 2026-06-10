@@ -5,8 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Home — Will Carroll</title>
     <link rel="stylesheet" href="styles.css" />
+    <script src="theme.js"></script>
   </head>
   <body>
+    <!-- Settings button + panel (theme switcher) -->
+    <button id="settings-btn" title="Settings">⚙️</button>
+    <div id="settings-panel" style="display: none;">
+      <h3>Settings</h3>
+      <p>Theme</p>
+      <button id="theme-toggle"></button>
+    </div>
+
     <!-- Everything unique to THIS page goes inside <main> -->
     <main>
       <!-- 1. Your name as the big heading. (Edit the text.) -->
@@ -34,5 +43,26 @@
       <a href="contact.html">Contact Me</a>
       <a href="about.html">About Me</a>
     </nav>
+
+    <script>
+      // Settings panel + theme toggle (toggleSiteTheme comes from theme.js)
+      const settingsBtn = document.querySelector("#settings-btn");
+      const settingsPanel = document.querySelector("#settings-panel");
+      const themeToggle = document.querySelector("#theme-toggle");
+
+      function updateToggleLabel() {
+        const isLight = document.documentElement.classList.contains("light-theme");
+        themeToggle.textContent = isLight ? "Switch to Dark (Letterboxd)" : "Switch to Light (Original)";
+      }
+      updateToggleLabel();
+
+      settingsBtn.addEventListener("click", function () {
+        settingsPanel.style.display = (settingsPanel.style.display === "none") ? "block" : "none";
+      });
+      themeToggle.addEventListener("click", function () {
+        toggleSiteTheme();
+        updateToggleLabel();
+      });
+    </script>
   </body>
 </html>

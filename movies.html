@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Movies — Will Carroll</title>
     <link rel="stylesheet" href="styles.css" />
+    <script src="theme.js"></script>
     <!-- Chart.js draws the charts; PapaParse reads the CSV file -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
@@ -46,6 +47,11 @@
     </main>
 
     <script>
+      // Match Chart.js text + gridlines to the active theme (light or dark).
+      var _light = document.documentElement.classList.contains("light-theme");
+      Chart.defaults.color = _light ? "#333333" : "#ffffff";
+      Chart.defaults.borderColor = _light ? "rgba(0,0,0,0.1)" : "rgba(255,255,255,0.15)";
+
       // Turn a rating number into stars, e.g. 3.5 -> "★★★½", 0.5 -> "½"
       function ratingLabel(r) {
         const full = Math.floor(r);

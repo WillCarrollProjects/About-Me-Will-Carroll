@@ -5,6 +5,7 @@
   <title>My Top 10 Songs</title>
   <!-- Pull in the shared styles used by every page on the site -->
   <link rel="stylesheet" href="styles.css">
+  <script src="theme.js"></script>
   <!-- Load Chart.js from a CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
@@ -26,6 +27,11 @@
   </div>
 
   <script>
+    // Match Chart.js text + gridlines to the active theme (light or dark).
+    var _light = document.documentElement.classList.contains("light-theme");
+    Chart.defaults.color = _light ? "#333333" : "#ffffff";
+    Chart.defaults.borderColor = _light ? "rgba(0,0,0,0.1)" : "rgba(255,255,255,0.15)";
+
     // 1. Load the data from data.json
     fetch("data.json")
       .then(function (response) {
