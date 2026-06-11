@@ -21,7 +21,9 @@
       "<button id='theme-toggle'></button>" +
       "<hr style='border:none;border-top:1px solid var(--card-border);margin:16px 0;'>" +
       "<p>Account</p>" +
-      "<div id='auth-area'></div>";
+      "<div id='auth-area'></div>" +
+      "<hr style='border:none;border-top:1px solid var(--card-border);margin:16px 0;'>" +
+      "<a href='linkletterboxd.html'><button>Link Letterboxd account</button></a>";
 
     document.body.appendChild(btn);
     document.body.appendChild(panel);

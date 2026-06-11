@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Link Letterboxd — Will Carroll</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script src="theme.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="settings.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+    <style>
+      .lb-card {
+        max-width: 520px;
+        margin: 20px auto;
+        padding: 24px;
+        border: 1px solid var(--card-border);
+        background-color: var(--card-bg);
+        border-radius: 8px;
+        text-align: left;
+      }
+      .lb-card ol { padding-left: 20px; }
+      .lb-card input[type="text"] {
+        width: 100%;
+        box-sizing: border-box;
+        margin: 8px 0;
+        padding: 10px;
+        font-size: 1rem;
+        border: 1px solid var(--card-border);
+        border-radius: 6px;
+        background-color: var(--bg);
+        color: var(--text);
+      }
+      #dropzone {
+        border: 2px dashed var(--card-border);
+        border-radius: 8px;
+        padding: 28px;
+        text-align: center;
+        cursor: pointer;
+        margin: 10px 0;
+      }
+      #dropzone.over { border-color: #00e054; color: #00e054; }
+      #upload-btn {
+        padding: 10px 20px;
+        font-weight: 700;
+        background-color: var(--btn-bg);
+        color: var(--btn-text);
+        border: 1px solid var(--btn-border);
+        border-radius: 6px;
+        cursor: pointer;
+      }
+      #upload-msg { min-height: 1.3em; margin-top: 12px; font-weight: 600; }
+    </style>
+  </head>
+  <body>
+    <!-- Shared navigation — keep this IDENTICAL on every page -->
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="projects.html">Projects</a>
+      <a href="contact.html">Contact</a>
+      <a href="about.html">About</a>
+    </nav>
+
+    <main>
+      <h1>Link Your Letterboxd 🎬</h1>
+
+      <div class="lb-card">
+        <h2>How to get your file</h2>
+        <ol>
+          <li>On a computer, go to <strong>letterboxd.com</strong> and log in.</li>
+          <li>Avatar (top-right) → <strong>Settings → Data</strong> → <strong>Export your data</strong>.</li>
+          <li><strong>Unzip</strong> the download and find <strong>ratings.csv</strong>.</li>
+          <li>Drop that file below — your movies become playable for everyone!</li>
+        </ol>
+      </div>
+
+      <div class="lb-card">
+        <h2>Add your list</h2>
+        <label>Name for your list (e.g. your Letterboxd username):</label>
+        <input id="listname" type="text" maxlength="30" placeholder="e.g. willcarroll281" />
+
+        <div id="dropzone">
+          📁 Drag your <strong>ratings.csv</strong> here, or click to choose a file
+          <input type="file" id="csvfile" accept=".csv" style="display: none;" />
+        </div>
+        <p>Selected file: <span id="filename">none</span></p>
+
+        <button id="upload-btn">Add my list</button>
+        <p id="upload-msg"></p>
+      </div>
+    </main>
+
+    <script>
+      const SB_BASE = "https://ebewnilkkambuxagccai.supabase.co";
+      const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImViZXduaWxra2FtYnV4YWdjY2FpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMjg5MTUsImV4cCI6MjA5NjYwNDkxNX0.hdCChehde6CFvdgRXl5GzucA55MsibziSFKwUBQlAXo";
+      const sb = supabase.createClient(SB_BASE, SB_KEY);
+
+      const dropzone = document.querySelector("#dropzone");
+      const fileInput = document.querySelector("#csvfile");
+      const filenameEl = document.querySelector("#filename");
+      const msg = document.querySelector("#upload-msg");
+      let selectedFile = null;
+
+      function setFile(file) { selectedFile = file; filenameEl.textContent = file ? file.name : "none"; }
+
+      dropzone.addEventListener("click", function () { fileInput.click(); });
+      fileInput.addEventListener("change", function () { if (fileInput.files[0]) setFile(fileInput.files[0]); });
+      dropzone.addEventListener("dragover", function (e) { e.preventDefault(); dropzone.classList.add("over"); });
+      dropzone.addEventListener("dragleave", function () { dropzone.classList.remove("over"); });
+      dropzone.addEventListener("drop", function (e) {
+        e.preventDefault();
+        dropzone.classList.remove("over");
+        if (e.dataTransfer.files[0]) setFile(e.dataTransfer.files[0]);
+      });
+
+      document.querySelector("#upload-btn").addEventListener("click", async function () {
+        const account = document.querySelector("#listname").value.trim();
+        if (!account) { msg.style.color = "#c0392b"; msg.textContent = "Give your list a name first."; return; }
+        if (!selectedFile) { msg.style.color = "#c0392b"; msg.textContent = "Choose your ratings.csv file."; return; }
+
+        msg.style.color = "#888"; msg.textContent = "Reading your file…";
+        const text = await selectedFile.text();
+        const parsed = Papa.parse(text, { header: true, skipEmptyLines: true });
+        const rows = [];
+        parsed.data.forEach(function (r) {
+          const rating = Number(r["Rating"]);
+          const name = (r["Name"] || "").trim();
+          if (name && !isNaN(rating)) rows.push({ account: account, name: name, year: r["Year"] || null, rating: rating });
+        });
+        if (rows.length === 0) {
+          msg.style.color = "#c0392b";
+          msg.textContent = "That doesn't look like a Letterboxd ratings.csv (no Name/Rating columns found).";
+          return;
+        }
+
+        // Don't allow a name that's already taken.
+        const existing = await sb.from("movie_lists").select("id").eq("account", account).limit(1);
+        if (existing.data && existing.data.length) {
+          msg.style.color = "#c0392b";
+          msg.textContent = "\"" + account + "\" is already taken — pick a different list name.";
+          return;
+        }
+
+        msg.textContent = "Uploading " + rows.length + " films…";
+        const { error } = await sb.from("movie_lists").insert(rows);
+        if (error) { msg.style.color = "#c0392b"; msg.textContent = "Upload failed: " + error.message; return; }
+        msg.style.color = "#2e7d32";
+        msg.textContent = "🎉 Added " + rows.length + " films as \"" + account + "\"! Anyone can now play your list in the Movie Games.";
+      });
+    </script>
+  </body>
+</html>

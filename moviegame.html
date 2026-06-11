@@ -64,6 +64,7 @@
       .leaderboard li { padding: 3px 0; }
       .exit-btn { background: none; color: #99aabb; border: 1px solid #456; padding: 6px 14px; font-size: 0.85rem; border-radius: 4px; }
       .exit-btn:hover { color: #00e054; border-color: #00e054; }
+      #account-select { padding: 6px 10px; font-size: 1rem; border-radius: 6px; border: 1px solid var(--card-border); background: var(--bg); color: var(--text); }
     </style>
   </head>
   <body>
@@ -80,7 +81,9 @@
 
       <!-- Mode select -->
       <div id="mode-screen" class="game-card">
-        <p>Two games built from the movies I rated on Letterboxd. Pick one:</p>
+        <p>Pick whose Letterboxd to play:</p>
+        <p><select id="account-select"></select> &nbsp; <a href="linkletterboxd.html" style="font-size: 0.85rem;">+ add your own</a></p>
+        <p>Then pick a game:</p>
         <button id="mode-gmr" class="menu-btn">Guess My Rating</button>
         <button id="mode-hl" class="menu-btn">Higher or Lower</button>
         <p id="loading-msg"></p>
@@ -157,7 +160,9 @@
       const ROUNDS = 5;
 
       const loadingMsg = document.querySelector("#loading-msg");
-      let allMovies = []; // { name, year, rating }
+      const accountSelect = document.querySelector("#account-select");
+      let allMovies = []; // { name, year, rating } for the selected account
+      let selectedAccount = null;
 
       // Show one screen, hide the others.
       function showScreen(id) {
@@ -176,25 +181,48 @@
       }
       function titleOf(m) { return m.name + (m.year ? " (" + m.year + ")" : ""); }
 
-      // Load my Letterboxd ratings once.
-      function loadMovies() {
-        return fetch("ratings.csv?t=" + Date.now())
-          .then(function (r) { if (!r.ok) throw new Error("ratings.csv " + r.status); return r.text(); })
-          .then(function (csv) {
-            const rows = Papa.parse(csv, { header: true, skipEmptyLines: true }).data;
+      // The movie_lists table holds every linked Letterboxd account's films.
+      const SB_LISTS = "https://ebewnilkkambuxagccai.supabase.co/rest/v1/movie_lists";
+
+      // Load the available accounts into the dropdown.
+      function loadAccounts() {
+        return fetch(SB_LISTS + "?select=account", { headers: SB_HEADERS })
+          .then(function (r) { return r.json(); })
+          .then(function (rows) {
+            const seen = {}, accounts = [];
+            rows.forEach(function (row) { if (!seen[row.account]) { seen[row.account] = true; accounts.push(row.account); } });
+            accounts.sort();
+            accountSelect.innerHTML = "";
+            accounts.forEach(function (a) {
+              const opt = document.createElement("option");
+              opt.value = a; opt.textContent = a;
+              accountSelect.appendChild(opt);
+            });
+            if (accounts.length) {
+              selectedAccount = (accounts.indexOf("Will Carroll") !== -1) ? "Will Carroll" : accounts[0];
+              accountSelect.value = selectedAccount;
+            }
+          });
+      }
+
+      // Load the films for the chosen account into allMovies.
+      function loadMoviesForAccount(account) {
+        return fetch(SB_LISTS + "?account=eq." + encodeURIComponent(account) + "&select=name,year,rating", { headers: SB_HEADERS })
+          .then(function (r) { return r.json(); })
+          .then(function (rows) {
             allMovies = [];
-            rows.forEach(function (row) {
-              const rating = Number(row["Rating"]);
-              const name = (row["Name"] || "").trim();
-              if (name && !isNaN(rating)) allMovies.push({ name: name, year: row["Year"], rating: rating });
+            rows.forEach(function (m) {
+              const rating = Number(m.rating);
+              if (m.name && !isNaN(rating)) allMovies.push({ name: m.name, year: m.year, rating: rating });
             });
           });
       }
-      // Make sure the data is loaded, then run a callback.
+
+      // Make sure the current account's movies are loaded, then run a callback.
       function ensureLoaded(then) {
         if (allMovies.length) { then(); return; }
         loadingMsg.textContent = "Loading movies…";
-        loadMovies().then(function () { loadingMsg.textContent = ""; then(); })
+        loadMoviesForAccount(selectedAccount).then(function () { loadingMsg.textContent = ""; then(); })
           .catch(function (err) { loadingMsg.textContent = "😅 Couldn't load the movies — try again."; console.error(err); });
       }
 
@@ -207,14 +235,14 @@
       const gmrNext = document.querySelector("#gmr-next");
 
       function startGMR() {
-        gmrMovies = pickRandom(allMovies, ROUNDS);
+        gmrMovies = pickRandom(allMovies, Math.min(ROUNDS, allMovies.length));
         gmrRound = 0; gmrScore = 0;
         showScreen("gmr-screen");
         showGMRRound();
       }
       function showGMRRound() {
         const movie = gmrMovies[gmrRound];
-        gmrRoundEl.textContent = "Round " + (gmrRound + 1) + " of " + ROUNDS + "  ·  Score: " + gmrScore;
+        gmrRoundEl.textContent = "Round " + (gmrRound + 1) + " of " + gmrMovies.length + "  ·  Score: " + gmrScore;
         gmrTitle.textContent = titleOf(movie);
         gmrReveal.textContent = "";
         gmrNext.style.display = "none";
@@ -234,15 +262,15 @@
         gmrButtons.querySelectorAll("button").forEach(function (b) { b.disabled = true; });
         gmrReveal.textContent = "You guessed " + ratingLabel(guess) + " · I rated " +
           ratingLabel(actual) + "  →  +" + points + " points";
-        gmrRoundEl.textContent = "Round " + (gmrRound + 1) + " of " + ROUNDS + "  ·  Score: " + gmrScore;
+        gmrRoundEl.textContent = "Round " + (gmrRound + 1) + " of " + gmrMovies.length + "  ·  Score: " + gmrScore;
         gmrNext.style.display = "inline-block";
       }
       gmrNext.addEventListener("click", function () {
         gmrRound += 1;
-        if (gmrRound < ROUNDS) {
+        if (gmrRound < gmrMovies.length) {
           showGMRRound();
         } else {
-          document.querySelector("#gmr-final").textContent = gmrScore + " / " + (ROUNDS * 100);
+          document.querySelector("#gmr-final").textContent = gmrScore + " / " + (gmrMovies.length * 100);
           resetSaveUI("#gmr-name", "#gmr-save", "#gmr-save-msg", "#gmr-signin");
           showScreen("gmr-end");
           loadLeaderboard("gmr", document.querySelector("#gmr-board"), "Guess My Rating");
@@ -349,7 +377,7 @@
       async function submitScore(name, game, score) {
         // Is there already a row for this name + game?
         const existing = await fetch(
-          SB_URL + "?game=eq." + game + "&name=eq." + encodeURIComponent(name) + "&select=id,score",
+          SB_URL + "?game=eq." + game + "&account=eq." + encodeURIComponent(selectedAccount) + "&name=eq." + encodeURIComponent(name) + "&select=id,score",
           { headers: SB_HEADERS }
         ).then(function (r) { if (!r.ok) throw new Error("lookup " + r.status); return r.json(); });
 
@@ -358,7 +386,7 @@
           const r = await fetch(SB_URL, {
             method: "POST",
             headers: Object.assign({ Prefer: "return=minimal" }, SB_HEADERS),
-            body: JSON.stringify({ name: name, game: game, score: score })
+            body: JSON.stringify({ name: name, game: game, score: score, account: selectedAccount })
           });
           if (!r.ok) throw new Error("insert " + r.status);
           return "new";
@@ -379,7 +407,7 @@
       function loadLeaderboard(game, boardEl, title) {
         title = title || "Leaderboard";
         boardEl.innerHTML = "<p>Loading " + title + "…</p>";
-        return fetch(SB_URL + "?game=eq." + game + "&select=name,score&order=score.desc&limit=10", { headers: SB_HEADERS })
+        return fetch(SB_URL + "?game=eq." + game + "&account=eq." + encodeURIComponent(selectedAccount) + "&select=name,score&order=score.desc&limit=10", { headers: SB_HEADERS })
           .then(function (r) { if (!r.ok) throw new Error("load " + r.status); return r.json(); })
           .then(function (rows) {
             if (!rows.length) { boardEl.innerHTML = "<h3>🏆 " + title + "</h3><p>No scores yet — be the first!</p>"; return; }
@@ -430,8 +458,18 @@
         b.addEventListener("click", showMenu);
       });
 
-      // Load the leaderboards on the menu right away.
-      showMenu();
+      // Switching account: reload that account's movies + leaderboards.
+      accountSelect.addEventListener("change", function () {
+        selectedAccount = this.value;
+        allMovies = [];
+        loadMoviesForAccount(selectedAccount).then(showMenu);
+      });
+
+      // Init: load the account list, then the default account's movies, then the menu.
+      loadAccounts()
+        .then(function () { return loadMoviesForAccount(selectedAccount); })
+        .then(function () { showMenu(); })
+        .catch(function (err) { console.error(err); loadingMsg.textContent = "😅 Couldn't load movie lists."; });
     </script>
   </body>
 </html>
