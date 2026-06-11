@@ -65,6 +65,8 @@
       .exit-btn { background: none; color: #99aabb; border: 1px solid #456; padding: 6px 14px; font-size: 0.85rem; border-radius: 4px; }
       .exit-btn:hover { color: #00e054; border-color: #00e054; }
       #account-select { padding: 6px 10px; font-size: 1rem; border-radius: 6px; border: 1px solid var(--card-border); background: var(--bg); color: var(--text); }
+      #gmr-poster { max-height: 240px; border-radius: 8px; margin: 4px 0 12px; display: none; }
+      .hl-poster { max-height: 180px; border-radius: 6px; margin-bottom: 8px; display: none; }
     </style>
   </head>
   <body>
@@ -95,6 +97,7 @@
       <div id="gmr-screen" class="game-card" style="display: none;">
         <p id="gmr-round" class="round-info"></p>
         <h2 id="gmr-title"></h2>
+        <img id="gmr-poster" alt="" />
         <p>What did I rate it?</p>
         <div id="gmr-buttons"></div>
         <p id="gmr-reveal"></p>
@@ -122,11 +125,13 @@
         <p>Which one did I rate higher?</p>
         <div id="hl-choices">
           <div class="hl-side">
+            <img id="hl-a-poster" class="hl-poster" alt="" />
             <button id="hl-a" class="hl-choice"></button>
             <div id="hl-a-rating" class="hl-rating"></div>
           </div>
           <span class="vs">vs</span>
           <div class="hl-side">
+            <img id="hl-b-poster" class="hl-poster" alt="" />
             <button id="hl-b" class="hl-choice"></button>
             <div id="hl-b-rating" class="hl-rating"></div>
           </div>
@@ -158,6 +163,26 @@
 
       const RATING_VALUES = [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5];
       const ROUNDS = 5;
+
+      // --- Movie posters (TMDB) ---
+      const TMDB_KEY = "c2b14e76ecfe4135ea4d7e3d66966097"; // free key from themoviedb.org → Settings → API
+      const posterCache = {};
+      function getPoster(title, year) {
+        const k = title + "|" + (year || "");
+        if (posterCache[k] !== undefined) return Promise.resolve(posterCache[k]);
+        let url = "https://api.themoviedb.org/3/search/movie?api_key=" + TMDB_KEY + "&query=" + encodeURIComponent(title);
+        if (year) url += "&year=" + encodeURIComponent(year);
+        return fetch(url)
+          .then(function (r) { return r.json(); })
+          .then(function (data) {
+            const results = data.results || [];
+            const path = (results[0] && results[0].poster_path) ? results[0].poster_path : null;
+            const posterUrl = path ? "https://image.tmdb.org/t/p/w342" + path : null;
+            posterCache[k] = posterUrl;
+            return posterUrl;
+          })
+          .catch(function () { posterCache[k] = null; return null; });
+      }
 
       const loadingMsg = document.querySelector("#loading-msg");
       const accountSelect = document.querySelector("#account-select");
@@ -230,6 +255,7 @@
       let gmrMovies = [], gmrRound = 0, gmrScore = 0;
       const gmrRoundEl = document.querySelector("#gmr-round");
       const gmrTitle = document.querySelector("#gmr-title");
+      const gmrPoster = document.querySelector("#gmr-poster");
       const gmrButtons = document.querySelector("#gmr-buttons");
       const gmrReveal = document.querySelector("#gmr-reveal");
       const gmrNext = document.querySelector("#gmr-next");
@@ -244,6 +270,10 @@
         const movie = gmrMovies[gmrRound];
         gmrRoundEl.textContent = "Round " + (gmrRound + 1) + " of " + gmrMovies.length + "  ·  Score: " + gmrScore;
         gmrTitle.textContent = titleOf(movie);
+        gmrPoster.style.display = "none"; gmrPoster.src = "";
+        getPoster(movie.name, movie.year).then(function (url) {
+          if (url && gmrMovies[gmrRound] === movie) { gmrPoster.src = url; gmrPoster.style.display = "inline-block"; }
+        });
         gmrReveal.textContent = "";
         gmrNext.style.display = "none";
         gmrButtons.innerHTML = "";
@@ -282,11 +312,20 @@
       const hlStreakEl = document.querySelector("#hl-streak");
       const hlAbtn = document.querySelector("#hl-a");
       const hlBbtn = document.querySelector("#hl-b");
+      const hlAposter = document.querySelector("#hl-a-poster");
+      const hlBposter = document.querySelector("#hl-b-poster");
       const hlAratingEl = document.querySelector("#hl-a-rating");
       const hlBratingEl = document.querySelector("#hl-b-rating");
       const hlReveal = document.querySelector("#hl-reveal");
       const hlNext = document.querySelector("#hl-next");
       const hlGameover = document.querySelector("#hl-gameover");
+
+      function setHLPoster(img, movie) {
+        img.style.display = "none"; img.src = "";
+        getPoster(movie.name, movie.year).then(function (url) {
+          if (url && (hlA === movie || hlB === movie)) { img.src = url; img.style.display = "block"; }
+        });
+      }
 
       function startHL() {
         hlStreak = 0;
@@ -304,6 +343,8 @@
         hlStreakEl.textContent = "Streak: " + hlStreak;
         hlAbtn.textContent = titleOf(hlA);
         hlBbtn.textContent = titleOf(hlB);
+        setHLPoster(hlAposter, hlA);
+        setHLPoster(hlBposter, hlB);
         hlAbtn.disabled = false; hlBbtn.disabled = false;
         hlAratingEl.textContent = ""; hlBratingEl.textContent = "";
         hlReveal.textContent = "";
