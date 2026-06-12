@@ -21,6 +21,7 @@
   --btn-border: #455667;
   --nav-link: #99aabb;
   --nav-hover: #00e054;
+  --bg-overlay: rgba(20, 24, 28, 0.74);
 }
 .light-theme {                /* LIGHT — the original look */
   --font: "Poppins", sans-serif;
@@ -36,15 +37,53 @@
   --btn-border: #000000;
   --nav-link: #333333;
   --nav-hover: #000000;
+  --bg-overlay: rgba(255, 255, 255, 0.85);
 }
+
+html { background-color: var(--bg); }
 
 body {
   font-family: var(--font);
   text-align: center;
-  background-color: var(--bg);
+  background-color: transparent;
   color: var(--text);
   margin: 0;
   padding: 24px 16px 60px;
+}
+
+/* Faded movie-poster wall background (the grid + posters are injected by theme.js) */
+#poster-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  overflow: hidden;
+}
+#poster-bg img { width: 100%; display: block; }
+#poster-bg-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-color: var(--bg-overlay);
+}
+
+/* Soft colorful glows background — every page EXCEPT the movie arcade
+   (which gets the poster wall instead). Injected by theme.js. */
+#glow-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(circle at 15% 25%, rgba(255, 128, 0, 0.30), transparent 45%),
+    radial-gradient(circle at 85% 20%, rgba(0, 224, 84, 0.24), transparent 45%),
+    radial-gradient(circle at 50% 100%, rgba(64, 188, 244, 0.26), transparent 50%);
+}
+.light-theme #glow-bg {
+  background:
+    radial-gradient(circle at 15% 25%, rgba(255, 128, 0, 0.34), transparent 45%),
+    radial-gradient(circle at 85% 20%, rgba(0, 224, 84, 0.30), transparent 45%),
+    radial-gradient(circle at 50% 100%, rgba(64, 188, 244, 0.32), transparent 50%);
 }
 
 h1, h2, h3 { color: var(--heading); }

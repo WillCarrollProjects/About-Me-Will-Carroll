@@ -65,6 +65,12 @@
       settingsBtn.addEventListener("click", function () {
         settingsPanel.style.display = (settingsPanel.style.display === "none") ? "block" : "none";
       });
+      // Clicking anywhere outside the panel (or its button) closes it.
+      document.addEventListener("click", function (e) {
+        if (settingsPanel.style.display === "none") return;
+        if (settingsPanel.contains(e.target) || settingsBtn.contains(e.target)) return;
+        settingsPanel.style.display = "none";
+      });
       themeToggle.addEventListener("click", function () {
         toggleSiteTheme();
         updateToggleLabel();
