@@ -38,6 +38,12 @@
     btn.addEventListener("click", function () {
       panel.style.display = (panel.style.display === "none") ? "block" : "none";
     });
+    // Clicking anywhere outside the panel (or its button) closes it.
+    document.addEventListener("click", function (e) {
+      if (panel.style.display === "none") return;
+      if (panel.contains(e.target) || btn.contains(e.target)) return;
+      panel.style.display = "none";
+    });
     themeToggle.addEventListener("click", function () { toggleSiteTheme(); updateLabel(); });
 
     // --- Account (Supabase auth) ---
